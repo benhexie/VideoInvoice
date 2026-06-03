@@ -23,6 +23,7 @@ export const CONFIG = {
       generateQuote: `${API_BASE_URL}/api/quotes/generate`,
       editQuote: `${API_BASE_URL}/api/quotes/edit`,
       previewQuote: (id: string) => `${API_BASE_URL}/api/quotes/${id}/preview`,
+      templatePreview: (name: string) => `${API_BASE_URL}/api/quotes/template-preview/${name}`,
     }
   },
   app: {

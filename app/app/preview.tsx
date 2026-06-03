@@ -5,8 +5,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { WebView } from "react-native-webview";
 import { useAuth } from "../context/AuthContext";
@@ -31,12 +31,19 @@ export default function PreviewScreen() {
         setLoading(true);
         setError(null);
 
-        // 1. Get user settings
-        const settingsRef = doc(db, "users", user.uid, "settings", "invoice");
-        const settingsSnap = await getDoc(settingsRef);
-        let customization = {};
+        // 1. Get user settings + invoice-level template override in parallel
+        const [settingsSnap, invoiceSnap] = await Promise.all([
+          getDoc(doc(db, "users", user.uid, "settings", "invoice")),
+          getDoc(doc(db, "invoices", id)),
+        ]);
+
+        let customization: Record<string, any> = {};
         if (settingsSnap.exists()) {
           customization = settingsSnap.data();
+        }
+        // Invoice-level template overrides the global default
+        if (invoiceSnap.exists() && invoiceSnap.data().template) {
+          customization = { ...customization, template: invoiceSnap.data().template };
         }
 
         // 2. Fetch preview HTML from backend
@@ -76,7 +83,7 @@ export default function PreviewScreen() {
   }, [id, user]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ChevronLeft color="#fff" size={28} />

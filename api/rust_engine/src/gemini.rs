@@ -51,7 +51,9 @@ impl GeminiClient {
     pub async fn generate_invoice(&self, prompt: &str, project_name: &str, currency: &str, mut parts: Vec<Part>) -> Result<Invoice, anyhow::Error> {
         let system_instruction = format!("You are an expert construction estimator. Generate a professional invoice. \
             Calculate realistic quantities, unit prices, and totals. Output ONLY valid JSON matching the exact structure requested, \
-            with no markdown formatting or backticks. All currency values should be estimated in {}", currency);
+            with no markdown formatting or backticks. All currency values should be in {}. \
+            If a price list document is included in the context, you MUST use the prices from that document for any matching line items — \
+            do not estimate or override prices that appear in the price list.", currency);
 
         let json_schema = serde_json::json!({
             "type": "object",

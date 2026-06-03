@@ -4,6 +4,7 @@ const {
   generateQuote,
   editQuote,
   previewInvoice,
+  previewTemplate,
 } = require("../controllers/quotesController");
 const router = express.Router();
 
@@ -18,6 +19,12 @@ router.post("/generate", validateAuth, generateQuote);
  * @description Applies natural language "Prompt-to-Edit" commands to an existing invoice.
  */
 router.post("/edit", validateAuth, editQuote);
+
+/**
+ * @route POST /api/quotes/template-preview/:name
+ * @description Returns a rendered HTML preview of a template with sample invoice data.
+ */
+router.post("/template-preview/:name", previewTemplate);
 
 /**
  * @route POST /api/quotes/:id/preview

@@ -15,7 +15,7 @@ import {
   Animated as RNAnimated,
   TouchableWithoutFeedback,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -41,7 +41,11 @@ import {
   DollarSign,
   Search,
   X,
+  Eye,
+  FileText,
 } from "lucide-react-native";
+import { WebView } from "react-native-webview";
+import { CONFIG } from "../config";
 import { searchCurrency, Currency } from "../utils/currency";
 
 const TEMPLATES = [
@@ -66,64 +70,50 @@ const PRESET_COLORS = [
 ];
 
 const TemplatePreview = ({ type, color }: { type: string; color: string }) => {
+  const dark = "#1a1a2e";
+
   if (type === "premium") {
+    // Dark navy header: accent company name left, italic white INVOICE right
+    // Accent gradient separator, two-col meta, dark table header, item rows, dark total button
     return (
-      <View style={styles.previewContainer}>
-        <View
-          style={[
-            {
-              height: 16,
-              width: "100%",
-              borderBottomLeftRadius: 8,
-              borderBottomRightRadius: 8,
-              backgroundColor: "#18181B",
-            },
-          ]}
-        />
-        <View style={styles.previewContent}>
-          <View style={[styles.previewRow, { marginTop: -4 }]}>
-            <View
-              style={[
-                styles.previewBlock,
-                {
-                  width: 20,
-                  backgroundColor: "#fff",
-                  borderWidth: 1,
-                  borderColor: "#e4e4e7",
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.previewBlock,
-                {
-                  width: 20,
-                  backgroundColor: "#fff",
-                  borderWidth: 1,
-                  borderColor: "#e4e4e7",
-                },
-              ]}
-            />
+      <View style={[styles.previewContainer, { backgroundColor: "#fafafa" }]}>
+        <View style={{ backgroundColor: dark, paddingHorizontal: 7, paddingVertical: 7, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View>
+            <View style={{ height: 3, width: 32, backgroundColor: color, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: 22, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 0.5 }} />
           </View>
-          <View style={[styles.previewLine, { marginTop: 12 }]} />
-          <View style={styles.previewLine} />
-          <View
-            style={[
-              styles.previewRow,
-              { marginTop: 8, justifyContent: "flex-end" },
-            ]}
-          >
-            <View
-              style={[
-                styles.previewBlock,
-                {
-                  width: 25,
-                  backgroundColor: "#18181B",
-                  height: 12,
-                  borderRadius: 2,
-                },
-              ]}
-            />
+          <Text style={{ fontSize: 7, color: "#fff", fontStyle: "italic", fontWeight: "700", letterSpacing: 1 }}>Invoice</Text>
+        </View>
+        {/* Gradient separator */}
+        <View style={{ height: 1, backgroundColor: color, opacity: 0.8 }} />
+        {/* Two-col meta */}
+        <View style={{ flexDirection: "row", paddingHorizontal: 7, paddingVertical: 5 }}>
+          <View style={{ flex: 1 }}>
+            <View style={{ height: 1.5, width: "70%", backgroundColor: color, opacity: 0.7, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "50%", backgroundColor: "#ccc", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ width: 0.5, backgroundColor: "#e0e0e0" }} />
+          <View style={{ flex: 1, paddingLeft: 6 }}>
+            <View style={{ height: 1.5, width: "65%", backgroundColor: "#ccc", borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "45%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+          </View>
+        </View>
+        {/* Dark table header */}
+        <View style={{ backgroundColor: dark, paddingHorizontal: 7, paddingVertical: 3.5, flexDirection: "row", justifyContent: "space-between" }}>
+          <View style={{ height: 1.5, width: "50%", backgroundColor: color, opacity: 0.9, borderRadius: 0.5 }} />
+          <View style={{ height: 1.5, width: "20%", backgroundColor: color, opacity: 0.9, borderRadius: 0.5 }} />
+        </View>
+        {/* Item rows */}
+        {[55, 42].map((w, i) => (
+          <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 7, paddingVertical: 3.5, borderBottomWidth: 0.5, borderBottomColor: "#eee" }}>
+            <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "20%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+          </View>
+        ))}
+        {/* Dark total button */}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 7, paddingTop: 5 }}>
+          <View style={{ backgroundColor: dark, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 2 }}>
+            <Text style={{ fontSize: 5, color: color, fontWeight: "700" }}>TOTAL  $8,250</Text>
           </View>
         </View>
       </View>
@@ -131,112 +121,133 @@ const TemplatePreview = ({ type, color }: { type: string; color: string }) => {
   }
 
   if (type === "elegant") {
+    // Centered masthead: accent circle monogram, company name, double gold rules
+    // Italic "Invoice" left / date right, accent-underlined table headers
+    const gold = "#c9a84c";
     return (
-      <View style={styles.previewContainer}>
-        <View style={[{ height: 4, width: "100%", backgroundColor: color }]} />
-        <View style={styles.previewContent}>
-          <View style={styles.previewRow}>
-            <View style={[styles.previewBlock, { width: 20, height: 10 }]} />
-            <View style={[styles.previewBlock, { width: 30 }]} />
+      <View style={[styles.previewContainer, { backgroundColor: "#fff" }]}>
+        {/* Centered masthead */}
+        <View style={{ alignItems: "center", paddingTop: 8, paddingBottom: 6 }}>
+          <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: color, justifyContent: "center", alignItems: "center", marginBottom: 3 }}>
+            <Text style={{ fontSize: 8, color: "#fff", fontWeight: "700" }}>A</Text>
           </View>
-          <View
-            style={[
-              styles.previewLine,
-              { marginTop: 12, height: 1, backgroundColor: "#d4d4d8" },
-            ]}
-          />
-          <View style={[styles.previewRow, { marginTop: 8 }]}>
-            <View style={styles.previewBlock} />
-            <View style={styles.previewBlock} />
+          <View style={{ height: 2.5, width: 46, backgroundColor: color, borderRadius: 0.5, marginBottom: 1.5 }} />
+          <View style={{ height: 1.5, width: 34, backgroundColor: "#bbb", borderRadius: 0.5, marginBottom: 5 }} />
+          {/* Double gold decorative rules */}
+          <View style={{ width: "80%", height: 1.5, backgroundColor: gold, marginBottom: 1.5 }} />
+          <View style={{ width: "80%", height: 0.75, backgroundColor: gold, opacity: 0.5 }} />
+        </View>
+        {/* Invoice meta */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 4 }}>
+          <Text style={{ fontSize: 7.5, fontStyle: "italic", color: color, fontWeight: "700" }}>Invoice</Text>
+          <View style={{ height: 1.5, width: "30%", backgroundColor: "#ccc", borderRadius: 0.5, marginTop: 2 }} />
+        </View>
+        {/* Table: accent-underlined header then rows */}
+        <View style={{ marginHorizontal: 8 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingBottom: 2.5, borderBottomWidth: 1.5, borderBottomColor: color }}>
+            <View style={{ height: 1.5, width: "50%", backgroundColor: color, borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "18%", backgroundColor: color, borderRadius: 0.5 }} />
           </View>
-          <View
-            style={[
-              styles.previewLine,
-              { marginTop: 12, height: 1, backgroundColor: "#d4d4d8" },
-            ]}
-          />
-          <View
-            style={[
-              styles.previewRow,
-              { marginTop: 8, justifyContent: "flex-end" },
-            ]}
-          >
-            <View style={[styles.previewBlock, { width: 25 }]} />
-          </View>
-          <View
-            style={[
-              {
-                height: 2,
-                width: "100%",
-                backgroundColor: "#18181B",
-                position: "absolute",
-                bottom: 4,
-                left: 8,
-              },
-            ]}
-          />
+          {[60, 44].map((w, i) => (
+            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 3.5, borderBottomWidth: 0.5, borderBottomColor: "#ece8e2" }}>
+              <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ddd", borderRadius: 0.5 }} />
+              <View style={{ height: 1.5, width: "18%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            </View>
+          ))}
         </View>
       </View>
     );
   }
 
   if (type === "bold") {
+    // Full-width accent banner + dark identity bar + party row + project band + rows
+    const boldDark = "#1f2937";
     return (
-      <View style={styles.previewContainer}>
-        <View style={{ flexDirection: "row", height: "100%" }}>
-          <View
-            style={{ width: "30%", backgroundColor: color, height: "100%" }}
-          />
-          <View style={{ width: "70%", padding: 8 }}>
-            <View style={[styles.previewRow, { marginTop: 4 }]}>
-              <View style={styles.previewBlock} />
-              <View style={styles.previewBlock} />
-            </View>
-            <View style={[styles.previewLine, { marginTop: 12 }]} />
-            <View style={styles.previewLine} />
-            <View
-              style={[
-                styles.previewBlock,
-                {
-                  width: "100%",
-                  height: 16,
-                  backgroundColor: "#f4f4f5",
-                  marginTop: 8,
-                  borderRadius: 2,
-                },
-              ]}
-            />
+      <View style={[styles.previewContainer, { backgroundColor: "#fff" }]}>
+        {/* Large accent banner */}
+        <View style={{ backgroundColor: color, paddingHorizontal: 8, paddingVertical: 9, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View>
+            <View style={{ height: 4.5, width: 44, backgroundColor: "#fff", borderRadius: 0.5, marginBottom: 2.5 }} />
+            <View style={{ height: 1.5, width: 28, backgroundColor: "rgba(255,255,255,0.6)", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ width: 22, height: 22, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.22)" }} />
+        </View>
+        {/* Dark identity bar with ghost INVOICE text */}
+        <View style={{ backgroundColor: boldDark, paddingHorizontal: 8, paddingVertical: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={{ fontSize: 11, fontWeight: "800", color: "rgba(255,255,255,0.1)", letterSpacing: 3 }}>INV</Text>
+          <View style={{ height: 1.5, width: "38%", backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 0.5 }} />
+        </View>
+        {/* Two-column party row */}
+        <View style={{ flexDirection: "row", paddingHorizontal: 8, paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: "#e5e7eb" }}>
+          <View style={{ flex: 1, paddingRight: 6 }}>
+            <View style={{ height: 2, width: "70%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "55%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ width: 0.5, backgroundColor: "#e5e7eb" }} />
+          <View style={{ flex: 1, paddingLeft: 6 }}>
+            <View style={{ height: 2, width: "65%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "50%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
           </View>
         </View>
+        {/* Accent-light project band with left border */}
+        <View style={{ borderLeftWidth: 3.5, borderLeftColor: color, backgroundColor: color + "15", paddingHorizontal: 6, paddingVertical: 3.5, marginBottom: 3 }}>
+          <View style={{ height: 1.5, width: "55%", backgroundColor: color, opacity: 0.7, borderRadius: 0.5 }} />
+        </View>
+        {/* Item rows */}
+        {[58, 44].map((w, i) => (
+          <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingVertical: 2.5 }}>
+            <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "20%", backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+          </View>
+        ))}
       </View>
     );
   }
 
   if (type === "modern") {
+    // Rounded page, accent square avatar + company left / large accent INVOICE right
+    // Two rounded info cards, item rows, accent total badge
     return (
-      <View style={styles.previewContainer}>
-        <View
-          style={[styles.previewHeaderModern, { backgroundColor: color }]}
-        />
-        <View style={styles.previewContent}>
-          <View style={styles.previewRow}>
-            <View style={styles.previewBlock} />
-            <View style={[styles.previewBlock, { width: 30 }]} />
+      <View style={[styles.previewContainer, { backgroundColor: "#fff", borderRadius: 6, overflow: "hidden" }]}>
+        {/* Header */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 8, paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: "#e2e8f0" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <View style={{ width: 20, height: 20, borderRadius: 5, backgroundColor: color, justifyContent: "center", alignItems: "center" }}>
+              <Text style={{ fontSize: 7, color: "#fff", fontWeight: "700" }}>A</Text>
+            </View>
+            <View>
+              <View style={{ height: 2.5, width: 32, backgroundColor: "#111", borderRadius: 0.5, marginBottom: 1.5 }} />
+              <View style={{ height: 1.5, width: 22, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+            </View>
           </View>
-          <View style={[styles.previewLine, { marginTop: 8 }]} />
-          <View style={styles.previewLine} />
-          <View
-            style={[
-              styles.previewRow,
-              { marginTop: 8, justifyContent: "flex-end" },
-            ]}
-          >
-            <View
-              style={[
-                styles.previewBlock,
-                { width: 25, backgroundColor: color },
-              ]}
-            />
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontSize: 9, fontWeight: "700", color: color }}>INVOICE</Text>
+            <View style={{ height: 1.5, width: 24, backgroundColor: "#ccc", borderRadius: 0.5, marginTop: 2 }} />
+          </View>
+        </View>
+        {/* Two rounded info cards */}
+        <View style={{ flexDirection: "row", paddingHorizontal: 6, paddingTop: 5, paddingBottom: 4, gap: 4 }}>
+          {[0, 1].map((i) => (
+            <View key={i} style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 5, padding: 4 }}>
+              <View style={{ height: 1.5, width: "65%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5, marginBottom: 2.5 }} />
+              <View style={{ height: 1.5, width: "85%", backgroundColor: "#ccc", borderRadius: 0.5, marginBottom: 1.5 }} />
+              <View style={{ height: 1.5, width: "60%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            </View>
+          ))}
+        </View>
+        {/* Item rows */}
+        <View style={{ paddingHorizontal: 8 }}>
+          {[60, 46, 53].map((w, i) => (
+            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 2.5, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: "#e2e8f0" }}>
+              <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+              <View style={{ height: 1.5, width: "20%", backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+            </View>
+          ))}
+        </View>
+        {/* Accent total badge */}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 8, paddingTop: 4 }}>
+          <View style={{ backgroundColor: color, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2.5 }}>
+            <Text style={{ fontSize: 5, color: "#fff", fontWeight: "700" }}>$8,250</Text>
           </View>
         </View>
       </View>
@@ -244,82 +255,79 @@ const TemplatePreview = ({ type, color }: { type: string; color: string }) => {
   }
 
   if (type === "classic") {
+    // 4px accent top rule, square monogram + left-border company block, bordered table
     return (
-      <View style={styles.previewContainer}>
-        <View style={styles.previewContent}>
-          <View
-            style={[
-              styles.previewBlock,
-              {
-                alignSelf: "center",
-                width: 40,
-                height: 8,
-                backgroundColor: color,
-              },
-            ]}
-          />
-          <View style={[styles.previewLine, { marginTop: 4, height: 1 }]} />
-          <View style={[styles.previewRow, { marginTop: 8 }]}>
-            <View style={styles.previewBlock} />
+      <View style={[styles.previewContainer, { backgroundColor: "#fff" }]}>
+        {/* 4px accent top rule */}
+        <View style={{ height: 4, backgroundColor: color }} />
+        {/* Letterhead */}
+        <View style={{ flexDirection: "row", alignItems: "flex-start", padding: 6, gap: 5, borderBottomWidth: 0.5, borderBottomColor: "#ddd" }}>
+          <View style={{ width: 20, height: 20, backgroundColor: color, borderRadius: 2, justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
+            <Text style={{ fontSize: 8, color: "#fff", fontWeight: "700" }}>A</Text>
           </View>
-          <View
-            style={[
-              styles.previewLine,
-              {
-                marginTop: 8,
-                height: 12,
-                backgroundColor: "#e4e4e7",
-                borderWidth: 1,
-                borderColor: "#d4d4d8",
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.previewLine,
-              {
-                height: 12,
-                backgroundColor: "#fafafa",
-                borderWidth: 1,
-                borderColor: "#d4d4d8",
-              },
-            ]}
-          />
+          <View style={{ borderLeftWidth: 3, borderLeftColor: color, paddingLeft: 5, flex: 1 }}>
+            <View style={{ height: 2.5, width: "70%", backgroundColor: "#111", borderRadius: 0.5, marginBottom: 1.5 }} />
+            <View style={{ height: 1.5, width: "50%", backgroundColor: "#aaa", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <View style={{ height: 2, width: 22, backgroundColor: color, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: 18, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+          </View>
+        </View>
+        {/* Table header with accent tint */}
+        <View style={{ flexDirection: "row", paddingHorizontal: 6, paddingVertical: 3, backgroundColor: color + "22" }}>
+          <View style={{ flex: 2, height: 1.5, backgroundColor: color, borderRadius: 0.5, marginRight: 4 }} />
+          <View style={{ flex: 1, height: 1.5, backgroundColor: color, borderRadius: 0.5 }} />
+          <View style={{ flex: 1, height: 1.5, backgroundColor: color, borderRadius: 0.5, marginLeft: 4 }} />
+        </View>
+        {/* Item rows with borders */}
+        {[1, 2].map((i) => (
+          <View key={i} style={{ flexDirection: "row", paddingHorizontal: 6, paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: "#ddd" }}>
+            <View style={{ flex: 2, height: 1.5, backgroundColor: "#e0e0e0", borderRadius: 0.5, marginRight: 4 }} />
+            <View style={{ flex: 1, height: 1.5, backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+            <View style={{ flex: 1, height: 1.5, backgroundColor: "#e0e0e0", borderRadius: 0.5, marginLeft: 4 }} />
+          </View>
+        ))}
+        {/* Total */}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 6, paddingTop: 4, gap: 4 }}>
+          <Text style={{ fontSize: 5, color: "#777" }}>Total</Text>
+          <Text style={{ fontSize: 5, fontWeight: "800", color: "#111" }}>$8,250</Text>
         </View>
       </View>
     );
   }
 
+  // MINIMAL — 2px accent top rule, sparse layout, spaced INVOICE label, bare dividers
   return (
-    <View style={styles.previewContainer}>
-      <View style={styles.previewContent}>
-        <View
-          style={[
-            styles.previewBlock,
-            { width: 20, height: 10, borderRadius: 2 },
-          ]}
-        />
-        <View
-          style={[
-            styles.previewBlock,
-            { width: 30, marginTop: 4, opacity: 0.5 },
-          ]}
-        />
-        <View style={[styles.previewLine, { marginTop: 12, opacity: 0.3 }]} />
-        <View style={[styles.previewLine, { opacity: 0.3 }]} />
-        <View style={[styles.previewLine, { opacity: 0.3 }]} />
-        <View
-          style={[
-            styles.previewBlock,
-            {
-              width: 25,
-              marginTop: 8,
-              alignSelf: "flex-end",
-              backgroundColor: color,
-              opacity: 0.8,
-            },
-          ]}
-        />
+    <View style={[styles.previewContainer, { backgroundColor: "#fff" }]}>
+      {/* 2px accent top rule */}
+      <View style={{ height: 2, backgroundColor: color }} />
+      {/* Header */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 8, paddingTop: 8, paddingBottom: 5 }}>
+        <View>
+          <View style={{ height: 2.5, width: 36, backgroundColor: "#111", borderRadius: 0.5, marginBottom: 2 }} />
+          <View style={{ height: 1.5, width: 26, backgroundColor: "#aaa", borderRadius: 0.5, marginBottom: 1.5 }} />
+          <View style={{ height: 1.5, width: 30, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+        </View>
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={{ fontSize: 5.5, fontWeight: "500", color: "#999", letterSpacing: 2.5 }}>INVOICE</Text>
+          <View style={{ height: 1.5, width: 22, backgroundColor: "#ccc", borderRadius: 0.5, marginTop: 2 }} />
+        </View>
+      </View>
+      {/* Thin divider */}
+      <View style={{ height: 0.5, backgroundColor: "#ddd", marginHorizontal: 8, marginBottom: 5 }} />
+      {/* Item rows — no borders, ultra clean */}
+      {[54, 42, 48].map((w, i) => (
+        <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 3.5 }}>
+          <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+          <View style={{ height: 1.5, width: "18%", backgroundColor: "#ccc", borderRadius: 0.5 }} />
+        </View>
+      ))}
+      {/* Bottom divider + total */}
+      <View style={{ height: 0.5, backgroundColor: "#ddd", marginHorizontal: 8, marginBottom: 4 }} />
+      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8 }}>
+        <Text style={{ fontSize: 5, color: "#999", fontWeight: "600", letterSpacing: 1.5 }}>TOTAL</Text>
+        <Text style={{ fontSize: 5, color: "#111", fontWeight: "700" }}>$8,250</Text>
       </View>
     </View>
   );
@@ -328,6 +336,7 @@ const TemplatePreview = ({ type, color }: { type: string; color: string }) => {
 export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -341,6 +350,7 @@ export default function SettingsScreen() {
     signatureUrl: "",
     currency: "USD",
     themeColor: PRESET_COLORS[0],
+    priceListUrl: "",
   });
   const [selectedTemplate, setSelectedTemplate] = useState(
     initialState.template,
@@ -361,6 +371,13 @@ export default function SettingsScreen() {
   const [currencySearchResults, setCurrencySearchResults] = useState<
     Currency[]
   >([]);
+
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const [priceListUrl, setPriceListUrl] = useState("");
+  const [priceListName, setPriceListName] = useState("");
 
   const panY = useRef(new RNAnimated.Value(0)).current;
 
@@ -402,7 +419,8 @@ export default function SettingsScreen() {
     companyLogo !== initialState.companyLogo ||
     signatureUrl !== initialState.signatureUrl ||
     currency !== initialState.currency ||
-    themeColor !== initialState.themeColor;
+    themeColor !== initialState.themeColor ||
+    priceListUrl !== initialState.priceListUrl;
 
   React.useEffect(() => {
     async function loadSettings() {
@@ -428,6 +446,7 @@ export default function SettingsScreen() {
             signatureUrl: data.signature_url || "",
             currency: data.currency || "USD",
             themeColor: data.theme_color || PRESET_COLORS[0],
+            priceListUrl: data.price_list_url || "",
           };
           setInitialState(loadedState);
           setSelectedTemplate(loadedState.template);
@@ -439,6 +458,8 @@ export default function SettingsScreen() {
           setSignatureUrl(loadedState.signatureUrl);
           setCurrency(loadedState.currency);
           setThemeColor(loadedState.themeColor);
+          setPriceListUrl(loadedState.priceListUrl);
+          setPriceListName(data.price_list_name || "");
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -483,6 +504,63 @@ export default function SettingsScreen() {
       console.error("Error picking signature:", error);
       alert("Failed to pick signature: " + error.message);
     }
+  };
+
+  const handlePriceListUpload = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/pdf",
+          "text/csv",
+          "text/plain",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "image/*",
+        ],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      setPriceListUrl(result.assets[0].uri);
+      setPriceListName(result.assets[0].name);
+    } catch (error: any) {
+      console.error("Error picking price list:", error);
+      alert("Failed to pick file: " + error.message);
+    }
+  };
+
+  const uploadFileToStorage = async (uri: string, pathPrefix: string, filename: string): Promise<string> => {
+    if (!uri || uri.startsWith("http")) return uri;
+
+    const blob: Blob = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = () => resolve(xhr.response);
+      xhr.onerror = () => reject(new TypeError("Network request failed"));
+      xhr.responseType = "blob";
+      xhr.open("GET", uri, true);
+      xhr.send(null);
+    });
+
+    const ext = filename.split(".").pop()?.toLowerCase() || "";
+    const mimeMap: Record<string, string> = {
+      pdf: "application/pdf",
+      csv: "text/csv",
+      txt: "text/plain",
+      xls: "application/vnd.ms-excel",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+    };
+    const contentType = mimeMap[ext] || "application/octet-stream";
+
+    const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const fileRef = ref(storage, `${pathPrefix}/${user!.uid}/${Date.now()}_${safeFilename}`);
+    await uploadBytes(fileRef, blob, { contentType });
+    return await getDownloadURL(fileRef);
   };
 
   const handleSignatureOK = (signature: string) => {
@@ -532,10 +610,10 @@ export default function SettingsScreen() {
     setLoading(true);
     try {
       const finalLogoUrl = await uploadImageToStorage(companyLogo, "logos");
-      const finalSignatureUrl = await uploadImageToStorage(
-        signatureUrl,
-        "signatures",
-      );
+      const finalSignatureUrl = await uploadImageToStorage(signatureUrl, "signatures");
+      const finalPriceListUrl = priceListUrl
+        ? await uploadFileToStorage(priceListUrl, "price_lists", priceListName || "pricelist.pdf")
+        : "";
 
       // Helper to delete old image from Firebase Storage
       const deleteOldImage = async (oldUrl: string, newUrl: string) => {
@@ -572,6 +650,8 @@ export default function SettingsScreen() {
           signature_url: finalSignatureUrl,
           currency,
           theme_color: themeColor,
+          price_list_url: finalPriceListUrl,
+          price_list_name: finalPriceListUrl ? priceListName : "",
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
@@ -579,6 +659,7 @@ export default function SettingsScreen() {
 
       setCompanyLogo(finalLogoUrl);
       setSignatureUrl(finalSignatureUrl);
+      setPriceListUrl(finalPriceListUrl);
       setInitialState({
         template: selectedTemplate,
         companyName,
@@ -589,6 +670,7 @@ export default function SettingsScreen() {
         signatureUrl: finalSignatureUrl,
         currency,
         themeColor,
+        priceListUrl: finalPriceListUrl,
       });
 
       router.back();
@@ -597,6 +679,30 @@ export default function SettingsScreen() {
       alert("Failed to save settings: " + e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openTemplatePreview = async (templateId: string) => {
+    setPreviewTemplateId(templateId);
+    setPreviewHtml(null);
+    setPreviewLoading(true);
+    try {
+      const res = await fetch(CONFIG.api.endpoints.templatePreview(templateId), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme_color: themeColor }),
+      });
+      if (!res.ok) throw new Error("Failed to load template preview");
+      let html = await res.text();
+      html = html.replace(
+        /<meta\s+name=["']viewport["']\s+content=["'][^"']*["']\s*\/?>/i,
+        '<meta name="viewport" content="width=1024">',
+      );
+      setPreviewHtml(html);
+    } catch (e) {
+      console.error("Error fetching template preview:", e);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -667,6 +773,12 @@ export default function SettingsScreen() {
                           <Text style={styles.premiumText}>PRO</Text>
                         </View>
                       )}
+                      <TouchableOpacity
+                        style={styles.templateEyeBtn}
+                        onPress={() => openTemplatePreview(tmpl.id)}
+                      >
+                        <Eye color="#fff" size={12} />
+                      </TouchableOpacity>
                     </View>
                     <Text
                       style={[
@@ -1097,6 +1209,46 @@ export default function SettingsScreen() {
                 </View>
               </Animated.View>
             )}
+
+            {/* Price List */}
+            {!showSignatureCanvas && (
+              <>
+                <View style={{ marginTop: 24, marginBottom: 12 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "600", color: "#FAFAFA" }}>
+                    Price List
+                  </Text>
+                  <Text style={{ fontSize: 13, color: "#A1A1AA", marginTop: 4 }}>
+                    Upload your rates so AI uses your exact prices when generating invoices. Supports PDF, CSV, Excel, Word, and more.
+                  </Text>
+                </View>
+
+                {priceListUrl ? (
+                  <View style={[styles.logoUploadBtn, { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16 }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", flex: 1, gap: 10 }}>
+                      <FileText color="#4F46E5" size={20} />
+                      <Text
+                        style={[styles.logoUploadText, { flex: 1 }]}
+                        numberOfLines={1}
+                        ellipsizeMode="middle"
+                      >
+                        {priceListName || "Price list uploaded"}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => { setPriceListUrl(""); setPriceListName(""); }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <X color="#A1A1AA" size={18} />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.logoUploadBtn} onPress={handlePriceListUpload}>
+                    <FileText color="#4F46E5" size={24} style={{ marginRight: 8 }} />
+                    <Text style={styles.logoUploadText}>Upload Price List (Optional)</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
           </Animated.View>
         </ScrollView>
 
@@ -1228,6 +1380,70 @@ export default function SettingsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Template Preview Modal */}
+      <Modal
+        visible={previewTemplateId !== null}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => {
+          setPreviewTemplateId(null);
+          setPreviewHtml(null);
+        }}
+      >
+        <View style={{ flex: 1, backgroundColor: "#09090B" }}>
+          <View style={[styles.templatePreviewModalHeader, { paddingTop: insets.top + 14 }]}>
+            <TouchableOpacity
+              onPress={() => {
+                setPreviewTemplateId(null);
+                setPreviewHtml(null);
+              }}
+              style={styles.templatePreviewModalClose}
+            >
+              <X color="#fff" size={22} />
+            </TouchableOpacity>
+            <Text style={styles.templatePreviewModalTitle}>
+              {TEMPLATES.find((t) => t.id === previewTemplateId)?.name} Template
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (previewTemplateId) setSelectedTemplate(previewTemplateId);
+                setPreviewTemplateId(null);
+                setPreviewHtml(null);
+              }}
+              style={[
+                styles.templatePreviewModalSelect,
+                {
+                  backgroundColor:
+                    TEMPLATES.find((t) => t.id === previewTemplateId)?.color ||
+                    "#4F46E5",
+                },
+              ]}
+            >
+              <Text style={styles.templatePreviewModalSelectText}>Select</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, backgroundColor: "#fff" }}>
+            {previewLoading ? (
+              <View
+                style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+              >
+                <ActivityIndicator size="large" color="#4F46E5" />
+                <Text style={{ marginTop: 12, color: "#6B7280", fontSize: 15 }}>
+                  Loading preview...
+                </Text>
+              </View>
+            ) : previewHtml ? (
+              <WebView
+                originWhitelist={["*"]}
+                source={{ html: previewHtml }}
+                style={{ flex: 1 }}
+                scalesPageToFit={true}
+              />
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1317,32 +1533,6 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     backgroundColor: "#fff",
-  },
-  previewHeaderModern: {
-    height: 16,
-    width: "100%",
-  },
-  previewContent: {
-    padding: 8,
-    flex: 1,
-  },
-  previewRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  previewBlock: {
-    height: 8,
-    width: 20,
-    backgroundColor: "#e4e4e7",
-    borderRadius: 1,
-  },
-  previewLine: {
-    height: 2,
-    width: "100%",
-    backgroundColor: "#f4f4f5",
-    marginTop: 4,
-    borderRadius: 1,
   },
   templateName: {
     color: "#A1A1AA",
@@ -1527,5 +1717,48 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
     fontSize: 16,
+  },
+  templateEyeBtn: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: 8,
+    padding: 5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  templatePreviewModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    backgroundColor: "#09090B",
+    borderBottomWidth: 1,
+    borderBottomColor: "#27272A",
+  },
+  templatePreviewModalClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  templatePreviewModalTitle: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  templatePreviewModalSelect: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  templatePreviewModalSelectText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

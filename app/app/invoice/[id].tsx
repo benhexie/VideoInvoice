@@ -37,11 +37,250 @@ import {
   FileText,
   Trash2,
   Eye,
+  Layout,
+  DollarSign,
+  Search,
 } from "lucide-react-native";
 import { CONFIG } from "../../config";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { getCurrencySymbol } from "../../utils/currency";
+import { getCurrencySymbol, searchCurrency, Currency } from "../../utils/currency";
 import { Video, ResizeMode } from "expo-av";
+
+const INVOICE_TEMPLATES = [
+  { id: "premium", name: "Premium", color: "#7C3AED", isPremium: true },
+  { id: "elegant", name: "Elegant", color: "#D4AF37", isPremium: true },
+  { id: "bold", name: "Bold", color: "#FF3366", isPremium: true },
+  { id: "modern", name: "Modern", color: "#4F46E5" },
+  { id: "classic", name: "Classic", color: "#10B981" },
+  { id: "minimal", name: "Minimalist", color: "#F59E0B" },
+];
+
+const InvoiceTemplatePreview = ({ type, color }: { type: string; color: string }) => {
+  const dark = "#1a1a2e";
+
+  if (type === "premium") {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fafafa" }}>
+        <View style={{ backgroundColor: dark, paddingHorizontal: 7, paddingVertical: 7, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View>
+            <View style={{ height: 3, width: 32, backgroundColor: color, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: 22, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 0.5 }} />
+          </View>
+          <Text style={{ fontSize: 7, color: "#fff", fontStyle: "italic", fontWeight: "700", letterSpacing: 1 }}>Invoice</Text>
+        </View>
+        <View style={{ height: 1, backgroundColor: color, opacity: 0.8 }} />
+        <View style={{ flexDirection: "row", paddingHorizontal: 7, paddingVertical: 5 }}>
+          <View style={{ flex: 1 }}>
+            <View style={{ height: 1.5, width: "70%", backgroundColor: color, opacity: 0.7, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "50%", backgroundColor: "#ccc", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ width: 0.5, backgroundColor: "#e0e0e0" }} />
+          <View style={{ flex: 1, paddingLeft: 6 }}>
+            <View style={{ height: 1.5, width: "65%", backgroundColor: "#ccc", borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "45%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+          </View>
+        </View>
+        <View style={{ backgroundColor: dark, paddingHorizontal: 7, paddingVertical: 3.5, flexDirection: "row", justifyContent: "space-between" }}>
+          <View style={{ height: 1.5, width: "50%", backgroundColor: color, opacity: 0.9, borderRadius: 0.5 }} />
+          <View style={{ height: 1.5, width: "20%", backgroundColor: color, opacity: 0.9, borderRadius: 0.5 }} />
+        </View>
+        {[55, 42].map((w, i) => (
+          <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 7, paddingVertical: 3.5, borderBottomWidth: 0.5, borderBottomColor: "#eee" }}>
+            <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "20%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+          </View>
+        ))}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 7, paddingTop: 5 }}>
+          <View style={{ backgroundColor: dark, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 2 }}>
+            <Text style={{ fontSize: 5, color: color, fontWeight: "700" }}>TOTAL  $8,250</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (type === "elegant") {
+    const gold = "#c9a84c";
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View style={{ alignItems: "center", paddingTop: 8, paddingBottom: 6 }}>
+          <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: color, justifyContent: "center", alignItems: "center", marginBottom: 3 }}>
+            <Text style={{ fontSize: 8, color: "#fff", fontWeight: "700" }}>A</Text>
+          </View>
+          <View style={{ height: 2.5, width: 46, backgroundColor: color, borderRadius: 0.5, marginBottom: 1.5 }} />
+          <View style={{ height: 1.5, width: 34, backgroundColor: "#bbb", borderRadius: 0.5, marginBottom: 5 }} />
+          <View style={{ width: "80%", height: 1.5, backgroundColor: gold, marginBottom: 1.5 }} />
+          <View style={{ width: "80%", height: 0.75, backgroundColor: gold, opacity: 0.5 }} />
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 4 }}>
+          <Text style={{ fontSize: 7.5, fontStyle: "italic", color: color, fontWeight: "700" }}>Invoice</Text>
+          <View style={{ height: 1.5, width: "30%", backgroundColor: "#ccc", borderRadius: 0.5, marginTop: 2 }} />
+        </View>
+        <View style={{ marginHorizontal: 8 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingBottom: 2.5, borderBottomWidth: 1.5, borderBottomColor: color }}>
+            <View style={{ height: 1.5, width: "50%", backgroundColor: color, borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "18%", backgroundColor: color, borderRadius: 0.5 }} />
+          </View>
+          {[60, 44].map((w, i) => (
+            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 3.5, borderBottomWidth: 0.5, borderBottomColor: "#ece8e2" }}>
+              <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ddd", borderRadius: 0.5 }} />
+              <View style={{ height: 1.5, width: "18%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  if (type === "bold") {
+    const boldDark = "#1f2937";
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View style={{ backgroundColor: color, paddingHorizontal: 8, paddingVertical: 9, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View>
+            <View style={{ height: 4.5, width: 44, backgroundColor: "#fff", borderRadius: 0.5, marginBottom: 2.5 }} />
+            <View style={{ height: 1.5, width: 28, backgroundColor: "rgba(255,255,255,0.6)", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ width: 22, height: 22, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.22)" }} />
+        </View>
+        <View style={{ backgroundColor: boldDark, paddingHorizontal: 8, paddingVertical: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={{ fontSize: 11, fontWeight: "800", color: "rgba(255,255,255,0.1)", letterSpacing: 3 }}>INV</Text>
+          <View style={{ height: 1.5, width: "38%", backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 0.5 }} />
+        </View>
+        <View style={{ flexDirection: "row", paddingHorizontal: 8, paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: "#e5e7eb" }}>
+          <View style={{ flex: 1, paddingRight: 6 }}>
+            <View style={{ height: 2, width: "70%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "55%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ width: 0.5, backgroundColor: "#e5e7eb" }} />
+          <View style={{ flex: 1, paddingLeft: 6 }}>
+            <View style={{ height: 2, width: "65%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: "50%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+          </View>
+        </View>
+        <View style={{ borderLeftWidth: 3.5, borderLeftColor: color, backgroundColor: color + "15", paddingHorizontal: 6, paddingVertical: 3.5, marginBottom: 3 }}>
+          <View style={{ height: 1.5, width: "55%", backgroundColor: color, opacity: 0.7, borderRadius: 0.5 }} />
+        </View>
+        {[58, 44].map((w, i) => (
+          <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingVertical: 2.5 }}>
+            <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "20%", backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  if (type === "modern") {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff", borderRadius: 6, overflow: "hidden" }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 8, paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: "#e2e8f0" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <View style={{ width: 20, height: 20, borderRadius: 5, backgroundColor: color, justifyContent: "center", alignItems: "center" }}>
+              <Text style={{ fontSize: 7, color: "#fff", fontWeight: "700" }}>A</Text>
+            </View>
+            <View>
+              <View style={{ height: 2.5, width: 32, backgroundColor: "#111", borderRadius: 0.5, marginBottom: 1.5 }} />
+              <View style={{ height: 1.5, width: 22, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+            </View>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontSize: 9, fontWeight: "700", color: color }}>INVOICE</Text>
+            <View style={{ height: 1.5, width: 24, backgroundColor: "#ccc", borderRadius: 0.5, marginTop: 2 }} />
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", paddingHorizontal: 6, paddingTop: 5, paddingBottom: 4, gap: 4 }}>
+          {[0, 1].map((i) => (
+            <View key={i} style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 5, padding: 4 }}>
+              <View style={{ height: 1.5, width: "65%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5, marginBottom: 2.5 }} />
+              <View style={{ height: 1.5, width: "85%", backgroundColor: "#ccc", borderRadius: 0.5, marginBottom: 1.5 }} />
+              <View style={{ height: 1.5, width: "60%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            </View>
+          ))}
+        </View>
+        <View style={{ paddingHorizontal: 8 }}>
+          {[60, 46, 53].map((w, i) => (
+            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 2.5, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: "#e2e8f0" }}>
+              <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+              <View style={{ height: 1.5, width: "20%", backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+            </View>
+          ))}
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 8, paddingTop: 4 }}>
+          <View style={{ backgroundColor: color, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2.5 }}>
+            <Text style={{ fontSize: 5, color: "#fff", fontWeight: "700" }}>$8,250</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (type === "classic") {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View style={{ height: 4, backgroundColor: color }} />
+        <View style={{ flexDirection: "row", alignItems: "flex-start", padding: 6, gap: 5, borderBottomWidth: 0.5, borderBottomColor: "#ddd" }}>
+          <View style={{ width: 20, height: 20, backgroundColor: color, borderRadius: 2, justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
+            <Text style={{ fontSize: 8, color: "#fff", fontWeight: "700" }}>A</Text>
+          </View>
+          <View style={{ borderLeftWidth: 3, borderLeftColor: color, paddingLeft: 5, flex: 1 }}>
+            <View style={{ height: 2.5, width: "70%", backgroundColor: "#111", borderRadius: 0.5, marginBottom: 1.5 }} />
+            <View style={{ height: 1.5, width: "50%", backgroundColor: "#aaa", borderRadius: 0.5 }} />
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <View style={{ height: 2, width: 22, backgroundColor: color, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: 18, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", paddingHorizontal: 6, paddingVertical: 3, backgroundColor: color + "22" }}>
+          <View style={{ flex: 2, height: 1.5, backgroundColor: color, borderRadius: 0.5, marginRight: 4 }} />
+          <View style={{ flex: 1, height: 1.5, backgroundColor: color, borderRadius: 0.5 }} />
+          <View style={{ flex: 1, height: 1.5, backgroundColor: color, borderRadius: 0.5, marginLeft: 4 }} />
+        </View>
+        {[1, 2].map((i) => (
+          <View key={i} style={{ flexDirection: "row", paddingHorizontal: 6, paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: "#ddd" }}>
+            <View style={{ flex: 2, height: 1.5, backgroundColor: "#e0e0e0", borderRadius: 0.5, marginRight: 4 }} />
+            <View style={{ flex: 1, height: 1.5, backgroundColor: "#e0e0e0", borderRadius: 0.5 }} />
+            <View style={{ flex: 1, height: 1.5, backgroundColor: "#e0e0e0", borderRadius: 0.5, marginLeft: 4 }} />
+          </View>
+        ))}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 6, paddingTop: 4, gap: 4 }}>
+          <Text style={{ fontSize: 5, color: "#777" }}>Total</Text>
+          <Text style={{ fontSize: 5, fontWeight: "800", color: "#111" }}>$8,250</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <View style={{ height: 2, backgroundColor: color }} />
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 8, paddingTop: 8, paddingBottom: 5 }}>
+        <View>
+          <View style={{ height: 2.5, width: 36, backgroundColor: "#111", borderRadius: 0.5, marginBottom: 2 }} />
+          <View style={{ height: 1.5, width: 26, backgroundColor: "#aaa", borderRadius: 0.5, marginBottom: 1.5 }} />
+          <View style={{ height: 1.5, width: 30, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+        </View>
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={{ fontSize: 5.5, fontWeight: "500", color: "#999", letterSpacing: 2.5 }}>INVOICE</Text>
+          <View style={{ height: 1.5, width: 22, backgroundColor: "#ccc", borderRadius: 0.5, marginTop: 2 }} />
+        </View>
+      </View>
+      <View style={{ height: 0.5, backgroundColor: "#ddd", marginHorizontal: 8, marginBottom: 5 }} />
+      {[54, 42, 48].map((w, i) => (
+        <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 3.5 }}>
+          <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+          <View style={{ height: 1.5, width: "18%", backgroundColor: "#ccc", borderRadius: 0.5 }} />
+        </View>
+      ))}
+      <View style={{ height: 0.5, backgroundColor: "#ddd", marginHorizontal: 8, marginBottom: 4 }} />
+      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8 }}>
+        <Text style={{ fontSize: 5, color: "#999", fontWeight: "600", letterSpacing: 1.5 }}>TOTAL</Text>
+        <Text style={{ fontSize: 5, color: "#111", fontWeight: "700" }}>$8,250</Text>
+      </View>
+    </View>
+  );
+};
 
 type LineItem = {
   id: string;
@@ -64,6 +303,7 @@ type InvoiceData = {
   media_url?: string;
   prompt?: string;
   currency?: string;
+  template?: string;
 };
 
 export default function InvoiceReviewScreen() {
@@ -85,34 +325,47 @@ export default function InvoiceReviewScreen() {
   const [isSavingManualEdit, setIsSavingManualEdit] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showOriginalRequest, setShowOriginalRequest] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const [currencySearch, setCurrencySearch] = useState("");
+  const [currencyResults, setCurrencyResults] = useState<Currency[]>([]);
   const videoRef = useRef<Video>(null);
 
   const panY = useRef(new RNAnimated.Value(0)).current;
+  const panYCurrency = useRef(new RNAnimated.Value(0)).current;
+  const panYTemplate = useRef(new RNAnimated.Value(0)).current;
 
-  useEffect(() => {
-    if (isEditing) {
-      panY.setValue(0);
-    }
-  }, [isEditing]);
+  useEffect(() => { if (isEditing) panY.setValue(0); }, [isEditing]);
+  useEffect(() => { if (showCurrencyModal) panYCurrency.setValue(0); }, [showCurrencyModal]);
+  useEffect(() => { if (showTemplateModal) panYTemplate.setValue(0); }, [showTemplateModal]);
 
-  const panResponder = useRef(
+  const makePanResponder = (
+    animValue: RNAnimated.Value,
+    onDismiss: () => void,
+  ) =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: RNAnimated.event([null, { dy: panY }], {
+      onPanResponderMove: RNAnimated.event([null, { dy: animValue }], {
         useNativeDriver: false,
       }),
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 100 || gestureState.vy > 1.5) {
-          setIsEditing(false);
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 100 || g.vy > 1.5) {
+          onDismiss();
         } else {
-          RNAnimated.spring(panY, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
+          RNAnimated.spring(animValue, { toValue: 0, useNativeDriver: true }).start();
         }
       },
-    }),
+    });
+
+  const panResponder = useRef(
+    makePanResponder(panY, () => setIsEditing(false)),
+  ).current;
+  const panResponderCurrency = useRef(
+    makePanResponder(panYCurrency, () => setShowCurrencyModal(false)),
+  ).current;
+  const panResponderTemplate = useRef(
+    makePanResponder(panYTemplate, () => setShowTemplateModal(false)),
   ).current;
 
   useEffect(() => {
@@ -246,8 +499,11 @@ export default function InvoiceReviewScreen() {
     setIsExporting(true);
 
     try {
-      // 1. Get user settings
-      let customization = settings || {};
+      // 1. Get user settings, applying invoice-level template override if set
+      let customization = { ...(settings || {}) };
+      if (invoice.template) {
+        customization.template = invoice.template;
+      }
 
       // 2. Fetch preview HTML from backend
       const token = await user.getIdToken();
@@ -280,6 +536,26 @@ export default function InvoiceReviewScreen() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const saveInvoiceCurrency = async (code: string) => {
+    if (!user || !id) return;
+    try {
+      await setDoc(doc(db, "invoices", id), { currency: code }, { merge: true });
+    } catch (e) {
+      console.error("Failed to save currency:", e);
+    }
+    setShowCurrencyModal(false);
+  };
+
+  const saveInvoiceTemplate = async (templateId: string) => {
+    if (!user || !id) return;
+    try {
+      await setDoc(doc(db, "invoices", id), { template: templateId }, { merge: true });
+    } catch (e) {
+      console.error("Failed to save template:", e);
+    }
+    setShowTemplateModal(false);
   };
 
   const handleDelete = () => {
@@ -550,7 +826,35 @@ export default function InvoiceReviewScreen() {
             )}
 
             {/* Line Items */}
-            <Text style={styles.sectionTitle}>Generated Invoice</Text>
+            <View style={{ marginBottom: 16, marginTop: 8 }}>
+              <Text style={styles.sectionTitle}>Generated Invoice</Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                  style={styles.templateChip}
+                  onPress={() => {
+                    setCurrencySearch("");
+                    setCurrencyResults([]);
+                    setShowCurrencyModal(true);
+                  }}
+                >
+                  <DollarSign color="#A1A1AA" size={13} />
+                  <Text style={styles.templateChipText}>{invoice?.currency || "USD"}</Text>
+                  <ChevronDown color="#A1A1AA" size={13} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.templateChip}
+                  onPress={() => setShowTemplateModal(true)}
+                >
+                  <Layout color="#A1A1AA" size={13} />
+                  <Text style={styles.templateChipText}>
+                    {INVOICE_TEMPLATES.find(
+                      (t) => t.id === (invoice?.template || settings?.template),
+                    )?.name || "Modern"}
+                  </Text>
+                  <ChevronDown color="#A1A1AA" size={13} />
+                </TouchableOpacity>
+              </View>
+            </View>
             {invoice.line_items?.map((item, index) => (
               <TouchableOpacity
                 key={item.id || index}
@@ -933,6 +1237,162 @@ export default function InvoiceReviewScreen() {
             </View>
           </KeyboardAvoidingView>
         </Modal>
+
+        {/* Currency Picker Modal */}
+        <Modal
+          visible={showCurrencyModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowCurrencyModal(false)}
+        >
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={() => setShowCurrencyModal(false)}>
+                <View style={{ flex: 1 }} />
+              </TouchableWithoutFeedback>
+              <RNAnimated.View
+                style={[
+                  styles.modalContent,
+                  { height: "75%", transform: [{ translateY: panYCurrency.interpolate({ inputRange: [0, 1000], outputRange: [0, 1000], extrapolate: "clamp" }) }] },
+                ]}
+              >
+                <View {...panResponderCurrency.panHandlers}>
+                  <View style={styles.dragHandleContainer}>
+                    <View style={styles.dragHandle} />
+                  </View>
+                  <Text style={styles.modalTitle}>Currency</Text>
+                </View>
+
+                {/* Search */}
+                <View style={styles.currencySearchRow}>
+                  <Search color="#A1A1AA" size={18} />
+                  <TextInput
+                    style={styles.currencySearchInput}
+                    placeholder="Search currency (e.g. USD, Euro)"
+                    placeholderTextColor="#A1A1AA"
+                    value={currencySearch}
+                    onChangeText={(text) => {
+                      setCurrencySearch(text);
+                      setCurrencyResults(searchCurrency(text));
+                    }}
+                    autoFocus
+                  />
+                </View>
+
+                <ScrollView keyboardShouldPersistTaps="handled">
+                  {currencyResults.length > 0 ? (
+                    currencyResults.map((curr) => (
+                      <TouchableOpacity
+                        key={curr.code}
+                        style={[
+                          styles.currencyItem,
+                          invoice?.currency === curr.code && {
+                            backgroundColor: "rgba(79,70,229,0.08)",
+                          },
+                        ]}
+                        onPress={() => saveInvoiceCurrency(curr.code)}
+                      >
+                        <View>
+                          <Text style={styles.currencyCode}>{curr.code}</Text>
+                          <Text style={styles.currencyName}>{curr.name}</Text>
+                        </View>
+                        <Text style={styles.currencySymbol}>{curr.symbol}</Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <Text style={styles.currencyEmpty}>
+                      {currencySearch.trim() ? "No currencies found" : "Type to search currencies…"}
+                    </Text>
+                  )}
+                </ScrollView>
+              </RNAnimated.View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* Template Picker Modal */}
+        <Modal
+          visible={showTemplateModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowTemplateModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => setShowTemplateModal(false)}>
+              <View style={{ flex: 1 }} />
+            </TouchableWithoutFeedback>
+            <RNAnimated.View
+              style={[
+                styles.modalContent,
+                { maxHeight: "72%", transform: [{ translateY: panYTemplate.interpolate({ inputRange: [0, 1000], outputRange: [0, 1000], extrapolate: "clamp" }) }] },
+              ]}
+            >
+              <View {...panResponderTemplate.panHandlers}>
+                <View style={styles.dragHandleContainer}>
+                  <View style={styles.dragHandle} />
+                </View>
+                <Text style={styles.modalTitle}>Choose Template</Text>
+              </View>
+              <ScrollView
+                contentContainerStyle={styles.templatePickerGrid}
+                showsVerticalScrollIndicator={false}
+              >
+                {INVOICE_TEMPLATES.map((tmpl) => {
+                  const activeId = invoice?.template || settings?.template || "modern";
+                  const isActive = activeId === tmpl.id;
+                  return (
+                    <TouchableOpacity
+                      key={tmpl.id}
+                      style={[
+                        styles.templatePickerCard,
+                        isActive && {
+                          borderColor: tmpl.color,
+                          backgroundColor: `${tmpl.color}18`,
+                        },
+                      ]}
+                      onPress={() => saveInvoiceTemplate(tmpl.id)}
+                    >
+                      <View
+                        style={[
+                          styles.templatePickerPreviewBox,
+                          isActive && { borderColor: tmpl.color, borderWidth: 2 },
+                        ]}
+                      >
+                        <InvoiceTemplatePreview type={tmpl.id} color={tmpl.color} />
+                        {tmpl.isPremium && (
+                          <View style={styles.templatePickerPremiumBadge}>
+                            <Text style={styles.templatePickerPremiumText}>PRO</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.templatePickerName,
+                          isActive && { color: tmpl.color, fontWeight: "700" },
+                        ]}
+                      >
+                        {tmpl.name}
+                      </Text>
+                      {isActive && (
+                        <View
+                          style={[
+                            styles.templatePickerCheck,
+                            { backgroundColor: tmpl.color },
+                          ]}
+                        >
+                          <Text style={{ color: "#fff", fontSize: 9, fontWeight: "bold" }}>✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </RNAnimated.View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -1237,5 +1697,130 @@ const styles = StyleSheet.create({
   processingSubtitle: {
     color: "#888",
     fontSize: 14,
+  },
+  invoiceSectionHeader: {
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  templateChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#1e1e1e",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "#2c2c2c",
+  },
+  templateChipText: {
+    color: "#A1A1AA",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  templatePickerGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    paddingBottom: 8,
+  },
+  templatePickerCard: {
+    width: "47%",
+    backgroundColor: "#2c2c2c",
+    borderWidth: 2,
+    borderColor: "#3f3f46",
+    borderRadius: 12,
+    padding: 10,
+    alignItems: "center",
+    position: "relative",
+  },
+  templatePickerPreviewBox: {
+    width: "100%",
+    height: 80,
+    borderRadius: 6,
+    marginBottom: 8,
+    backgroundColor: "#27272A",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#3F3F46",
+  },
+  templatePickerName: {
+    color: "#A1A1AA",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  templatePickerPremiumBadge: {
+    position: "absolute",
+    top: 4,
+    left: 4,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  templatePickerPremiumText: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "bold",
+  },
+  templatePickerCheck: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#121212",
+  },
+  currencySearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2c2c2c",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    height: 46,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#3f3f46",
+  },
+  currencySearchInput: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 15,
+  },
+  currencyItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#2c2c2c",
+    borderRadius: 8,
+    paddingHorizontal: 4,
+  },
+  currencyCode: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  currencyName: {
+    color: "#A1A1AA",
+    fontSize: 13,
+    marginTop: 1,
+  },
+  currencySymbol: {
+    color: "#A1A1AA",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  currencyEmpty: {
+    color: "#A1A1AA",
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 15,
   },
 });

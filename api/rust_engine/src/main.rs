@@ -84,6 +84,7 @@ struct ProcessQuoteRequest {
     prompt: String,
     project_name: String,
     currency: Option<String>,
+    price_list_url: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -242,6 +243,62 @@ async fn process_quote(Json(payload): Json<ProcessQuoteRequest>) -> Json<Process
         }
     }
     println!("[TIMING] Step 1: Media Processing took {:?}", media_start.elapsed());
+
+    // 1b. Inject price list if the user has one configured
+    if let Some(ref price_list_url) = payload.price_list_url {
+        if !price_list_url.is_empty() {
+            println!("Downloading price list: {}", price_list_url);
+            let lower = price_list_url.to_lowercase();
+            let content_type = if lower.contains(".pdf") {
+                "application/pdf"
+            } else if lower.contains(".csv") {
+                "text/csv"
+            } else if lower.contains(".xlsx") {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            } else if lower.contains(".xls") {
+                "application/vnd.ms-excel"
+            } else if lower.contains(".docx") {
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            } else if lower.contains(".doc") {
+                "application/msword"
+            } else if lower.contains(".txt") {
+                "text/plain"
+            } else if lower.contains(".png") {
+                "image/png"
+            } else if lower.contains(".jpg") || lower.contains(".jpeg") {
+                "image/jpeg"
+            } else {
+                "application/pdf"
+            };
+
+            match reqwest::get(price_list_url).await {
+                Ok(response) => {
+                    if let Ok(bytes) = response.bytes().await {
+                        // Label part so Gemini understands what follows
+                        parts.push(crate::models::Part {
+                            text: Some("The following document is the user's price list. Use the prices from this document for any matching items in the invoice:".to_string()),
+                            function_call: None,
+                            function_response: None,
+                            file_data: None,
+                            inline_data: None,
+                        });
+                        parts.push(crate::models::Part {
+                            text: None,
+                            function_call: None,
+                            function_response: None,
+                            file_data: None,
+                            inline_data: Some(crate::models::InlineData {
+                                mime_type: content_type.to_string(),
+                                data: BASE64_STANDARD.encode(&bytes),
+                            }),
+                        });
+                        println!("Successfully added price list ({}) as inline_data", content_type);
+                    }
+                }
+                Err(e) => println!("Failed to download price list: {}", e),
+            }
+        }
+    }
 
     // 2. Call Gemini API
     let gemini_start = Instant::now();

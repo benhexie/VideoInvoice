@@ -23,7 +23,7 @@ import {
 import { Video, ResizeMode } from "expo-av";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage, db } from "../../firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { CONFIG } from "../../config";
@@ -39,6 +39,8 @@ import {
   Check,
   DollarSign,
   Search,
+  FileText,
+  Trash2,
 } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -60,6 +62,10 @@ export default function CameraCaptureScreen() {
   const [recordedVideoUri, setRecordedVideoUri] = useState<string | null>(null);
   const [timer, setTimer] = useState(60);
   const [currency, setCurrency] = useState("USD");
+  const [priceListUrl, setPriceListUrl] = useState<string | null>(null);
+  const [priceListName, setPriceListName] = useState<string>("");
+  const [showPriceListModal, setShowPriceListModal] = useState(false);
+  const [isUploadingPriceList, setIsUploadingPriceList] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [currencySearchQuery, setCurrencySearchQuery] = useState("");
   const [currencySearchResults, setCurrencySearchResults] = useState<
@@ -108,9 +114,9 @@ export default function CameraCaptureScreen() {
           const settingsDoc = await getDoc(settingsRef);
           if (settingsDoc.exists()) {
             const data = settingsDoc.data();
-            if (data.currency) {
-              setCurrency(data.currency);
-            }
+            if (data.currency) setCurrency(data.currency);
+            setPriceListUrl(data.price_list_url || null);
+            setPriceListName(data.price_list_name || "");
           }
         } catch (error) {
           console.error("Error fetching currency:", error);
@@ -207,6 +213,7 @@ export default function CameraCaptureScreen() {
           media_urls: [downloadURL],
           prompt: "Analyze this video to generate an itemized quote.",
           currency: currency,
+          ...(priceListUrl && { price_list_url: priceListUrl }),
         }),
       });
     } catch (e: any) {
@@ -289,13 +296,15 @@ export default function CameraCaptureScreen() {
       const API_URL = CONFIG.api.endpoints.generateQuote;
 
       const payload: any = {
-        prompt:
-          currentText || "Analyze the attached document to generate a quote.",
+        prompt: currentText || "Analyze the attached document to generate a quote.",
         currency: currency,
       };
       if (documentURL) {
         payload.media_urls = [documentURL];
         payload.project_name = currentDoc?.name?.split(".")[0] || "New Project";
+      }
+      if (priceListUrl) {
+        payload.price_list_url = priceListUrl;
       }
 
       await fetch(API_URL, {
@@ -309,6 +318,80 @@ export default function CameraCaptureScreen() {
     } catch (e: any) {
       console.error(e);
       alert("Error processing text request: " + e.message);
+    }
+  };
+
+  const handlePickPriceList = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/pdf",
+          "text/csv",
+          "text/plain",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "image/*",
+        ],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.length) return;
+
+      const asset = result.assets[0];
+      setIsUploadingPriceList(true);
+
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+
+      const ext = asset.name.split(".").pop()?.toLowerCase() || "pdf";
+      const mimeMap: Record<string, string> = {
+        pdf: "application/pdf",
+        csv: "text/csv",
+        txt: "text/plain",
+        xls: "application/vnd.ms-excel",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        doc: "application/msword",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+      };
+      const contentType = mimeMap[ext] || "application/octet-stream";
+      const safeFilename = asset.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const storageRef = ref(storage, `price_lists/${user?.uid}/${Date.now()}_${safeFilename}`);
+      const uploadTask = await uploadBytesResumable(storageRef, blob, { contentType });
+      const downloadURL = await getDownloadURL(uploadTask.ref);
+
+      await setDoc(
+        doc(db, "users", user!.uid, "settings", "invoice"),
+        { price_list_url: downloadURL, price_list_name: asset.name },
+        { merge: true },
+      );
+
+      setPriceListUrl(downloadURL);
+      setPriceListName(asset.name);
+      setShowPriceListModal(false);
+    } catch (e: any) {
+      console.error("Price list upload failed:", e);
+      alert("Failed to upload price list: " + e.message);
+    } finally {
+      setIsUploadingPriceList(false);
+    }
+  };
+
+  const handleRemovePriceList = async () => {
+    try {
+      await setDoc(
+        doc(db, "users", user!.uid, "settings", "invoice"),
+        { price_list_url: "", price_list_name: "" },
+        { merge: true },
+      );
+      setPriceListUrl(null);
+      setPriceListName("");
+      setShowPriceListModal(false);
+    } catch (e: any) {
+      alert("Failed to remove price list: " + e.message);
     }
   };
 
@@ -340,17 +423,28 @@ export default function CameraCaptureScreen() {
         <Zap color="#4F46E5" size={16} fill="#4F46E5" />
         <Text style={styles.headerText}>SnapQuote AI</Text>
       </View>
-      <TouchableOpacity
-        style={styles.currencyBadge}
-        onPress={() => {
-          setCurrencySearchQuery("");
-          setCurrencySearchResults(searchCurrency(""));
-          setShowCurrencyModal(true);
-        }}
-      >
-        <DollarSign color="#4F46E5" size={16} />
-        <Text style={styles.currencyText}>{currency}</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <TouchableOpacity
+          style={[styles.currencyBadge, priceListUrl ? styles.priceListBadgeActive : null]}
+          onPress={() => setShowPriceListModal(true)}
+        >
+          <FileText color={priceListUrl ? "#10B981" : "#A1A1AA"} size={14} />
+          <Text style={[styles.currencyText, priceListUrl ? { color: "#10B981" } : { color: "#A1A1AA" }]}>
+            {priceListUrl ? "Prices ✓" : "Prices"}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.currencyBadge}
+          onPress={() => {
+            setCurrencySearchQuery("");
+            setCurrencySearchResults(searchCurrency(""));
+            setShowCurrencyModal(true);
+          }}
+        >
+          <DollarSign color="#4F46E5" size={16} />
+          <Text style={styles.currencyText}>{currency}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -617,6 +711,81 @@ export default function CameraCaptureScreen() {
           </View>
         </View>
       )}
+
+      {/* Price List Modal */}
+      <Modal
+        visible={showPriceListModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPriceListModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowPriceListModal(false)}>
+            <View style={{ flex: 1 }} />
+          </TouchableWithoutFeedback>
+          <View style={[styles.modalContent, { height: "auto", paddingBottom: 36 }]}>
+            <View style={styles.dragHandleContainer}>
+              <View style={styles.dragHandle} />
+            </View>
+            <Text style={styles.modalTitle}>Price List</Text>
+            <Text style={{ color: "#A1A1AA", fontSize: 14, marginBottom: 24, lineHeight: 20 }}>
+              Upload your rates so the AI uses your exact prices when generating invoices.
+            </Text>
+
+            {priceListUrl ? (
+              <>
+                {/* Current file card */}
+                <View style={styles.priceListFileCard}>
+                  <FileText color="#10B981" size={22} />
+                  <Text style={styles.priceListFileName} numberOfLines={2}>
+                    {priceListName || "Price list"}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.priceListActionBtn}
+                  onPress={handlePickPriceList}
+                  disabled={isUploadingPriceList}
+                >
+                  {isUploadingPriceList ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.priceListActionBtnText}>Replace File</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.priceListActionBtn, styles.priceListRemoveBtn]}
+                  onPress={handleRemovePriceList}
+                  disabled={isUploadingPriceList}
+                >
+                  <Trash2 color="#EF4444" size={16} />
+                  <Text style={[styles.priceListActionBtnText, { color: "#EF4444" }]}>Remove Price List</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.priceListUploadBtn}
+                onPress={handlePickPriceList}
+                disabled={isUploadingPriceList}
+              >
+                {isUploadingPriceList ? (
+                  <>
+                    <ActivityIndicator color="#4F46E5" size="small" style={{ marginBottom: 8 }} />
+                    <Text style={styles.priceListUploadText}>Uploading...</Text>
+                  </>
+                ) : (
+                  <>
+                    <FileText color="#4F46E5" size={28} style={{ marginBottom: 8 }} />
+                    <Text style={styles.priceListUploadText}>Upload Price List</Text>
+                    <Text style={styles.priceListUploadSub}>PDF, CSV, Excel, Word, TXT</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Currency Selection Modal */}
       <Modal
@@ -1104,5 +1273,64 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
     fontSize: 16,
+  },
+  priceListBadgeActive: {
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+  },
+  priceListFileCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.3)",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  priceListFileName: {
+    color: "#FAFAFA",
+    fontSize: 15,
+    fontWeight: "600",
+    flex: 1,
+  },
+  priceListActionBtn: {
+    backgroundColor: "#4F46E5",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    flexDirection: "row",
+    gap: 8,
+  },
+  priceListRemoveBtn: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.3)",
+  },
+  priceListActionBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  priceListUploadBtn: {
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "rgba(79, 70, 229, 0.5)",
+    borderRadius: 16,
+    paddingVertical: 28,
+    alignItems: "center",
+    backgroundColor: "rgba(79, 70, 229, 0.06)",
+  },
+  priceListUploadText: {
+    color: "#818CF8",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  priceListUploadSub: {
+    color: "#52525B",
+    fontSize: 13,
   },
 });

@@ -1,11 +1,99 @@
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Dimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Mail, ArrowRight, LogOut, RefreshCw } from "lucide-react-native";
+import { Mail, ArrowRight, RefreshCw } from "lucide-react-native";
 import { auth } from "../../firebaseConfig";
 import { signOut, sendEmailVerification } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+} from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+
+const { height } = Dimensions.get("window");
+
+function RippleRing({ delay }: { delay: number }) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.5);
+
+  useEffect(() => {
+    scale.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(1.9, { duration: 2100, easing: Easing.out(Easing.ease) }),
+        -1
+      )
+    );
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(0, { duration: 2100, easing: Easing.out(Easing.ease) }),
+        -1
+      )
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: "absolute",
+          width: 100,
+          height: 100,
+          borderRadius: 50,
+          borderWidth: 1.5,
+          borderColor: "#4F46E5",
+        },
+        animStyle,
+      ]}
+    />
+  );
+}
+
+function FloatingIcon() {
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    translateY.value = withRepeat(
+      withSequence(
+        withTiming(-12, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.iconCircle, animStyle]}>
+      <Mail color="#818CF8" size={44} strokeWidth={1.5} />
+    </Animated.View>
+  );
+}
 
 export default function VerifyScreen() {
   const router = useRouter();
@@ -18,18 +106,15 @@ export default function VerifyScreen() {
     setLoading(true);
     setError("");
     setMessage("");
-    
     try {
-      // We must reload the user to get the latest emailVerified status from Firebase
       await auth.currentUser?.reload();
-      
       if (auth.currentUser?.emailVerified) {
         router.replace("/(tabs)");
       } else {
         await signOut(auth);
         router.replace({
           pathname: "/(auth)/login",
-          params: { error: "Please verify your email before continuing." }
+          params: { error: "Please verify your email before continuing." },
         });
       }
     } catch (e: any) {
@@ -41,14 +126,12 @@ export default function VerifyScreen() {
 
   const handleResend = async () => {
     if (!auth.currentUser) return;
-    
     setResendLoading(true);
     setError("");
     setMessage("");
-    
     try {
       await sendEmailVerification(auth.currentUser);
-      setMessage("Verification email resent! Please check your inbox and spam folder.");
+      setMessage("Verification email resent! Check your inbox and spam folder.");
     } catch (e: any) {
       if (e.code === "auth/too-many-requests") {
         setError("Please wait a few minutes before requesting another email.");
@@ -60,35 +143,39 @@ export default function VerifyScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
+      {/* Gradient background */}
+      <LinearGradient
+        colors={["rgba(79,70,229,0.2)", "rgba(9,9,11,0)"]}
+        style={styles.topGradient}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+
       <View style={styles.inner}>
-        <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Mail color="#4F46E5" size={40} />
-          </View>
+        {/* Animated icon with ripple rings */}
+        <Animated.View entering={FadeInDown.springify().damping(14).delay(100)} style={styles.iconContainer}>
+          <RippleRing delay={0} />
+          <RippleRing delay={700} />
+          <RippleRing delay={1400} />
+          <FloatingIcon />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.textContainer}>
+        {/* Text */}
+        <Animated.View entering={FadeInDown.springify().damping(14).delay(250)} style={styles.textContainer}>
           <Text style={styles.title}>Check your email</Text>
           <Text style={styles.subtitle}>
             We've sent a verification link to{"\n"}
             <Text style={styles.emailText}>{auth.currentUser?.email}</Text>
           </Text>
           <Text style={styles.description}>
-            Please verify your email address to secure your account and continue using SnapQuote AI.
+            Click the link in the email to verify your account. It may take a minute or two to arrive.
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(300).duration(600)} style={styles.actionContainer}>
+        {/* Actions */}
+        <Animated.View entering={FadeInDown.springify().damping(14).delay(400)} style={styles.actionContainer}>
           {error ? (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
@@ -105,13 +192,14 @@ export default function VerifyScreen() {
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleContinue}
             disabled={loading || resendLoading}
+            activeOpacity={0.85}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
                 <Text style={styles.buttonText}>I've verified my email</Text>
-                <ArrowRight color="#fff" size={20} style={styles.buttonIcon} />
+                <ArrowRight color="#fff" size={20} />
               </>
             )}
           </TouchableOpacity>
@@ -120,12 +208,13 @@ export default function VerifyScreen() {
             style={[styles.secondaryButton, resendLoading && styles.buttonDisabled]}
             onPress={handleResend}
             disabled={loading || resendLoading}
+            activeOpacity={0.85}
           >
             {resendLoading ? (
-              <ActivityIndicator color="#4F46E5" />
+              <ActivityIndicator color="#818CF8" />
             ) : (
               <>
-                <RefreshCw color="#4F46E5" size={18} style={styles.secondaryButtonIcon} />
+                <RefreshCw color="#818CF8" size={18} />
                 <Text style={styles.secondaryButtonText}>Resend email</Text>
               </>
             )}
@@ -141,6 +230,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#09090B",
   },
+  topGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.5,
+  },
   inner: {
     flex: 1,
     padding: 24,
@@ -148,50 +244,56 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     alignItems: "center",
-    marginBottom: 32,
+    justifyContent: "center",
+    marginBottom: 48,
+    height: 120,
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(79, 70, 229, 0.1)",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(79,70,229,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.3)",
+    borderColor: "rgba(79,70,229,0.3)",
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#4F46E5",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 8,
   },
   textContainer: {
     alignItems: "center",
     marginBottom: 40,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 30,
+    fontWeight: "800",
     color: "#FAFAFA",
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    marginBottom: 14,
+    letterSpacing: -0.6,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
     color: "#A1A1AA",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     lineHeight: 24,
   },
   emailText: {
     color: "#FAFAFA",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   description: {
     fontSize: 14,
-    color: "#71717A",
+    color: "#52525B",
     textAlign: "center",
-    lineHeight: 20,
-    paddingHorizontal: 20,
+    lineHeight: 22,
+    paddingHorizontal: 12,
   },
-  actionContainer: {
-    marginBottom: 32,
-  },
+  actionContainer: {},
   button: {
     backgroundColor: "#4F46E5",
     borderRadius: 16,
@@ -199,11 +301,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 14,
     shadowColor: "#4F46E5",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -213,49 +317,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  buttonIcon: {
-    marginLeft: 8,
-  },
   secondaryButton: {
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(24,24,27,0.8)",
     borderRadius: 16,
     height: 56,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    gap: 10,
     borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.3)",
+    borderColor: "rgba(79,70,229,0.3)",
   },
   secondaryButtonText: {
-    color: "#4F46E5",
+    color: "#818CF8",
     fontSize: 16,
     fontWeight: "600",
   },
-  secondaryButtonIcon: {
-    marginRight: 8,
-  },
-  footer: {
-    alignItems: "center",
-    marginTop: "auto",
-    paddingBottom: 20,
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-  },
-  logoutText: {
-    color: "#A1A1AA",
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  logoutIcon: {
-    marginRight: 8,
-  },
   errorContainer: {
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    backgroundColor: "rgba(239,68,68,0.1)",
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.2)",
+    borderColor: "rgba(239,68,68,0.2)",
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
@@ -266,9 +347,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   successContainer: {
-    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    backgroundColor: "rgba(16,185,129,0.1)",
     borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.2)",
+    borderColor: "rgba(16,185,129,0.2)",
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,

@@ -33,6 +33,7 @@ const generateQuote = async (req, res) => {
         prompt || "Analyze this job site video and create an itemized quote.",
       project_name: project_name || "New Project",
       currency: req.body.currency || "USD",
+      price_list_url: req.body.price_list_url || null,
     };
 
     // Forwarding to Rust Engine
@@ -139,6 +140,7 @@ const previewInvoice = async (req, res) => {
       company_address: customization.address || customization.company_address,
       company_phone: customization.phone || customization.company_phone,
       company_email: customization.email || customization.company_email,
+      logo_url: customization.companyLogo || customization.company_logo || customization.logo_url,
       signature:
         customization.signatureUrl ||
         customization.signature_url ||
@@ -184,8 +186,60 @@ const previewInvoice = async (req, res) => {
   }
 };
 
+const previewTemplate = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { theme_color } = req.body || {};
+
+    const validTemplates = ["premium", "elegant", "bold", "modern", "classic", "minimal"];
+    const templateName = validTemplates.includes(name) ? name : "modern";
+
+    const sampleLineItems = [
+      { description: "Landscaping & Ground Clearing", quantity: 1, unit_price: 1200, discount: 0 },
+      { description: "Concrete Pouring & Finishing", quantity: 3, unit_price: 450, discount: 0 },
+      { description: "Electrical Wiring (per room)", quantity: 5, unit_price: 320, discount: 160 },
+      { description: "Plumbing Installation", quantity: 2, unit_price: 680, discount: 0 },
+    ];
+
+    const subtotal = sampleLineItems.reduce(
+      (sum, item) => sum + item.quantity * item.unit_price - (item.discount || 0),
+      0,
+    );
+    const taxes = Math.round(subtotal * 0.1);
+    const total = subtotal + taxes;
+
+    const color = theme_color || "#4F46E5";
+
+    const renderData = {
+      project_name: "Home Renovation Project",
+      date: "June 3, 2026",
+      line_items: sampleLineItems,
+      subtotal,
+      taxes,
+      total,
+      company_name: "Acme Services Co.",
+      company_address: "742 Evergreen Terrace, Springfield",
+      company_phone: "+1 (555) 234-5678",
+      company_email: "info@acmeservices.com",
+      theme_color: color,
+      theme_color_light: color + "1A",
+      currency: "$",
+      template: templateName,
+    };
+
+    res.render(templateName, {
+      ...renderData,
+      locals: renderData,
+    });
+  } catch (error) {
+    console.error("Error previewing template:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   generateQuote,
   editQuote,
   previewInvoice,
+  previewTemplate,
 };
