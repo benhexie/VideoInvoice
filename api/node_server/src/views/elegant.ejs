@@ -1,177 +1,445 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice - <%= project_name %></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Lato', sans-serif; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .print-exact { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        @media print {
-            body { background-color: white; padding: 0; }
-            .print-hide { display: none; }
-            .bg-gold { background-color: #D4AF37 !important; }
-            .text-gold { color: #D4AF37 !important; }
-            .border-gold { border-color: #D4AF37 !important; }
-        }
-    </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: '<%= locals.theme_color || "#D4AF37" %>', // Default gold
-                        brandLight: '<%= locals.theme_color_light || "#F9F6EE" %>',
-                        dark: '#1A1A1A'
-                    }
-                }
-            }
-        }
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice — <%= locals.project_name %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    <%- `
+    :root {
+      --accent: ${locals.theme_color || '#1e3a5f'};
+      --accent-light: ${locals.theme_color_light || '#f0f4f9'};
+      --gold: #c9a84c;
+    }
+    ` %>
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page { size: A4; margin: 0; }
+
+    body {
+      font-family: 'Lato', Georgia, serif;
+      background: #f5f3ef;
+      color: #1a1a1a;
+      font-size: 13.5px;
+      line-height: 1.6;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @media print {
+      body { background: #fff; }
+      * { animation: none !important; transition: none !important; }
+      .page { box-shadow: none; margin: 0; }
+    }
+
+    .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+
+    .page {
+      background: #ffffff;
+      max-width: 800px;
+      margin: 32px auto;
+      padding: 0;
+      box-shadow: 0 4px 28px rgba(0,0,0,0.10);
+    }
+
+    /* ── MASTHEAD ───────────────────────────────────────── */
+    .masthead {
+      padding: 44px 56px 32px;
+      text-align: center;
+      border-bottom: 1px solid #e8e4de;
+      position: relative;
+    }
+
+    .masthead-logo {
+      max-height: 60px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 14px;
+    }
+
+    .masthead-monogram {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .masthead-company {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    .masthead-contact {
+      font-size: 11.5px;
+      color: #888;
+      font-weight: 300;
+      letter-spacing: 0.5px;
+      margin-top: 6px;
+    }
+
+    .masthead-contact span + span::before { content: ' · '; }
+
+    /* Double gold decorative rule */
+    .gold-rule-wrap {
+      margin: 20px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gold-rule { height: 2px; background: var(--gold); }
+    .gold-rule-thin { height: 1px; background: var(--gold); opacity: 0.5; }
+
+    /* ── INVOICE META ───────────────────────────────────── */
+    .invoice-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 28px 56px 0;
+    }
+
+    .invoice-heading {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--accent);
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    .invoice-detail-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 2px;
+    }
+
+    .invoice-detail-value {
+      font-size: 13.5px;
+      font-weight: 400;
+      color: #333;
+    }
+
+    /* ── BILL TO ────────────────────────────────────────── */
+    .billing-section {
+      padding: 24px 56px 20px;
+      border-bottom: 1px solid #e8e4de;
+    }
+
+    .billing-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .client-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .client-detail {
+      font-size: 12.5px;
+      color: #5a5a5a;
+      font-weight: 300;
+      margin-top: 4px;
+      line-height: 1.65;
+      white-space: pre-line;
+    }
+
+    .client-email { font-size: 12.5px; color: #5a5a5a; font-weight: 300; margin-top: 2px; }
+
+    /* ── TABLE ──────────────────────────────────────────── */
+    .table-wrapper { padding: 24px 56px 0; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 10px 12px 10px 0;
+      text-align: left;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    thead th:last-child { text-align: right; padding-right: 0; }
+    thead th.num        { text-align: right; }
+
+    tbody td {
+      padding: 12px 12px 12px 0;
+      font-size: 13px;
+      color: #3a3a3a;
+      font-weight: 300;
+      border-bottom: 1px solid #ece8e2;
+      vertical-align: top;
+    }
+
+    tbody td:last-child { text-align: right; padding-right: 0; font-weight: 400; }
+    tbody td.num        { text-align: right; font-weight: 400; }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* ── TOTALS (dot-leader style) ──────────────────────── */
+    .totals-outer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 28px 56px 32px;
+    }
+
+    .totals-block { width: 300px; }
+
+    .totals-line {
+      display: flex;
+      align-items: baseline;
+      padding: 5px 0;
+      border-bottom: 1px dotted #ccc;
+    }
+
+    .totals-line:last-of-type { border-bottom: none; }
+
+    .totals-line-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 300;
+      flex-shrink: 0;
+    }
+
+    .totals-line-dots {
+      flex: 1;
+      border-bottom: 1px dotted #ccc;
+      margin: 0 8px 3px;
+      min-width: 20px;
+    }
+
+    .totals-line-value {
+      font-size: 13px;
+      color: #333;
+      font-weight: 400;
+      flex-shrink: 0;
+    }
+
+    .totals-line.discount .totals-line-value { color: #16a34a; }
+
+    .totals-grand {
+      border-top: 1px solid var(--accent);
+      margin-top: 8px;
+      padding-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .totals-grand-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .totals-grand-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ── SIGNATURE ──────────────────────────────────────── */
+    .signature-section {
+      margin: 0 56px 28px;
+      padding-top: 24px;
+      border-top: 1px solid #e8e4de;
+      display: flex;
+      align-items: flex-end;
+      gap: 32px;
+    }
+
+    .sig-block { min-width: 200px; }
+    .sig-img   { max-height: 52px; max-width: 180px; object-fit: contain; display: block; }
+    .sig-line  { border-top: 1px solid #bbb; margin-top: 8px; padding-top: 5px; font-size: 11px; color: #999; letter-spacing: 1px; text-transform: uppercase; }
+
+    /* ── TERMS ──────────────────────────────────────────── */
+    .terms-section {
+      margin: 0 56px 32px;
+      padding: 16px 0;
+      border-top: 1px solid #e8e4de;
+    }
+
+    .terms-label { font-size: 10px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .terms-text  { font-size: 12px; color: #777; font-weight: 300; line-height: 1.8; white-space: pre-line; }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .footer-gold-rule { margin: 0 56px; }
+
+    .footer {
+      padding: 20px 56px;
+      text-align: center;
+    }
+
+    .footer-thanks {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      font-style: italic;
+      color: #aaa;
+      font-weight: 400;
+    }
+  </style>
 </head>
+<body>
 <%
-  function formatMoney(amount) {
-    return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
+const fmt = (n) => {
+  const sym = locals.currency || '$';
+  return sym + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
 %>
-<body class="bg-gray-100 p-8 flex justify-center print:p-0">
-    <div class="bg-white w-full max-w-4xl shadow-2xl overflow-hidden print:shadow-none print:rounded-none relative">
-        
-        <!-- Top decorative bar -->
-        <div class="h-3 w-full bg-brand print-exact"></div>
+<div class="page">
 
-        <div class="p-16">
-            <!-- Header -->
-            <div class="flex justify-between items-start border-b border-gray-200 pb-12 mb-12">
-                <div class="w-1/2">
-                    <% if (locals.company_logo) { %>
-                        <img src="<%= company_logo %>" alt="Company Logo" class="h-24 object-contain mb-6">
-                    <% } %>
-                    <% if (locals.company_name) { %>
-                        <h2 class="text-4xl font-serif font-bold text-dark mb-6"><%= locals.company_name %></h2>
-                    <% } %>
-                    <div class="text-gray-600 text-sm leading-loose">
-                        <% if (locals.company_address) { %>
-                        <p><%= locals.company_address %></p>
-                        <% } %>
-                        <% if (locals.company_email) { %>
-                        <p><%= locals.company_email %></p>
-                        <% } %>
-                        <% if (locals.company_phone) { %>
-                        <p><%= locals.company_phone %></p>
-                        <% } %>
-                    </div>
-                </div>
-                <div class="w-1/2 text-right">
-                    <h1 class="text-6xl font-serif text-brand tracking-widest uppercase mb-6">Invoice</h1>
-                    <div class="text-gray-600 space-y-2">
-                        <p class="text-lg"><span class="font-semibold text-dark mr-3">Invoice No.</span> <%= locals.invoice_number || 'INV-0001' %></p>
-                        <p class="text-lg"><span class="font-semibold text-dark mr-3">Date</span> <%= locals.date || new Date().toLocaleDateString() %></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Billing Info -->
-            <div class="flex justify-between items-start mb-16">
-                <div class="w-1/2 pr-8">
-                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">Billed To</h3>
-                    <p class="font-serif text-2xl text-dark mb-2"><%= locals.client_name || 'Client Name' %></p>
-                    <p class="text-gray-600 text-sm leading-loose whitespace-pre-line">
-                        <%= locals.client_address || 'Client Address\nCity, State Zip' %>
-                    </p>
-                    <% if (locals.client_email) { %>
-                        <p class="text-gray-600 text-sm mt-1"><%= client_email %></p>
-                    <% } %>
-                </div>
-                <div class="w-1/2 pl-8">
-                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">Project Description</h3>
-                    <p class="font-serif text-2xl text-dark mb-2"><%= project_name %></p>
-                    <p class="text-gray-600 text-sm leading-loose">Thank you for your business. It's a pleasure working with you on this project.</p>
-                </div>
-            </div>
-
-            <!-- Items Table -->
-            <div class="mb-16">
-                <table class="w-full text-left border-collapse">
-                    <thead class="print:break-inside-avoid">
-                        <tr class="border-b-2 border-dark text-dark">
-                            <th class="py-4 px-2 font-bold uppercase text-xs tracking-widest w-1/2">Item Description</th>
-                            <th class="py-4 px-2 font-bold uppercase text-xs tracking-widest text-center">Qty</th>
-                            <th class="py-4 px-2 font-bold uppercase text-xs tracking-widest text-right">Rate</th>
-                            <th class="py-4 px-2 font-bold uppercase text-xs tracking-widest text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm">
-                        <% line_items.forEach(function(item) { %>
-                        <tr class="border-b border-gray-100 print:break-inside-avoid">
-                            <td class="py-6 px-2">
-                                <p class="font-serif text-lg text-dark"><%= item.description %></p>
-                                <% if (item.discount_percentage) { %>
-                                <p class="text-sm text-red-600 mt-1 font-sans">Discount: <%= item.discount_percentage %>% (-<%= locals.currency || '$' %><%= formatMoney(item.discount || 0) %>)</p>
-                                <% } else if (item.discount) { %>
-                                <p class="text-sm text-red-600 mt-1 font-sans">Discount: -<%= locals.currency || '$' %><%= formatMoney(item.discount) %></p>
-                                <% } %>
-                            </td>
-                            <td class="py-6 px-2 text-center text-base"><%= item.quantity %></td>
-                            <td class="py-6 px-2 text-right text-base"><%= locals.currency || '$' %><%= formatMoney(item.unit_price) %></td>
-                            <td class="py-6 px-2 text-right font-bold text-dark text-base"><%= locals.currency || '$' %><%= formatMoney((item.quantity * item.unit_price) - (item.discount || 0)) %></td>
-                        </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Summary -->
-            <div class="flex justify-end">
-                <div class="w-1/2">
-                    <div class="space-y-4 text-sm text-gray-600">
-                        <div class="flex justify-between py-2 border-b border-gray-100">
-                            <span class="font-medium">Subtotal</span>
-                            <span><%= locals.currency || '$' %><%= formatMoney(total) %></span>
-                        </div>
-                        <% if (locals.discount) { %>
-                        <div class="flex justify-between py-2 border-b border-gray-100 text-brand">
-                            <span class="font-medium">Discount</span>
-                            <span>-<%= locals.currency || '$' %><%= formatMoney(locals.discount) %></span>
-                        </div>
-                        <% } %>
-                        <% if (locals.tax_rate) { %>
-                        <div class="flex justify-between py-2 border-b border-gray-100">
-                            <span class="font-medium">Tax (<%= locals.tax_rate %>%)</span>
-                            <span><%= locals.currency || '$' %><%= formatMoney((total - (locals.discount || 0)) * (locals.tax_rate/100)) %></span>
-                        </div>
-                        <% } %>
-                        <div class="flex justify-between items-center py-6 mt-4 border-t-2 border-dark">
-                            <span class="font-serif text-2xl font-bold text-dark uppercase tracking-widest">Total Due</span>
-                            <span class="font-serif text-3xl font-bold text-brand"><%= locals.currency || '$' %><%= formatMoney(total - (locals.discount || 0) + ((total - (locals.discount || 0)) * (locals.tax_rate || 0)/100)) %></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <% if (locals.signature || locals.show_signature) { %>
-            <div class="mt-24 flex justify-between items-end">
-                <div class="w-1/3">
-                    <% if (locals.signature) { %>
-                        <img src="<%= locals.signature %>" alt="Signature" class="max-h-16 mb-2" />
-                    <% } %>
-                    <div class="border-b border-gray-400 h-2 mb-2 <%= locals.signature ? '' : 'mt-14' %>"></div>
-                    <p class="text-xs text-gray-500 text-center uppercase tracking-widest">Authorized Signature</p>
-                    <p class="text-sm font-medium text-gray-700 text-center mt-1"><%= locals.signature_date || locals.date || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) %></p>
-                </div>
-                <div class="w-1/3 text-right">
-                    <p class="font-serif text-brand italic">Thank You!</p>
-                </div>
-            </div>
-            <% } %>
-        </div>
-        
-        <!-- Bottom decorative bar -->
-        <div class="h-1 w-full bg-dark print-exact mt-12"></div>
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <% if (locals.logo_url) { %>
+      <img class="masthead-logo" src="<%= locals.logo_url %>" alt="Logo" />
+    <% } else { %>
+      <div class="masthead-monogram serif"><%= companyInitial %></div>
+    <% } %>
+    <div class="masthead-company"><%= locals.company_name || '' %></div>
+    <div class="masthead-contact">
+      <% if (locals.company_address) { %><span><%= locals.company_address %></span><% } %>
+      <% if (locals.company_phone)   { %><span><%= locals.company_phone %></span><% } %>
+      <% if (locals.company_email)   { %><span><%= locals.company_email %></span><% } %>
     </div>
+    <div class="gold-rule-wrap">
+      <div class="gold-rule"></div>
+      <div class="gold-rule-thin"></div>
+    </div>
+  </div>
+
+  <!-- INVOICE META -->
+  <div class="invoice-meta" style="padding-bottom: 24px; border-bottom: 1px solid #e8e4de;">
+    <div class="invoice-heading">Invoice</div>
+    <div style="text-align:right">
+      <div class="invoice-detail-label">Date</div>
+      <div class="invoice-detail-value"><%= locals.date || new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) %></div>
+      <div class="invoice-detail-label" style="margin-top:10px">Project</div>
+      <div class="invoice-detail-value"><%= locals.project_name || '' %></div>
+    </div>
+  </div>
+
+  <!-- BILL TO -->
+  <div class="billing-section">
+    <div class="billing-label">Prepared For</div>
+    <div class="client-name"><%= locals.client_name || '' %></div>
+    <div class="client-detail"><%= locals.client_address || '' %></div>
+    <% if (locals.client_email) { %><div class="client-email"><%= locals.client_email %></div><% } %>
+  </div>
+
+  <!-- LINE ITEMS -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50%">Description</th>
+          <th class="num">Qty</th>
+          <th class="num">Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% (locals.line_items || []).forEach(function(item) { %>
+        <tr>
+          <td><%= item.description %></td>
+          <td class="num"><%= Number(item.quantity || 0).toLocaleString('en-US', {maximumFractionDigits:2}) %></td>
+          <td class="num"><%= fmt(item.unit_price) %></td>
+          <td><%= fmt(item.total || (item.quantity * item.unit_price)) %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TOTALS -->
+  <div class="totals-outer">
+    <div class="totals-block">
+      <div class="totals-line">
+        <span class="totals-line-label">Subtotal</span>
+        <span class="totals-line-dots"></span>
+        <span class="totals-line-value"><%= fmt(locals.subtotal) %></span>
+      </div>
+      <% if (locals.discount && Number(locals.discount) > 0) { %>
+      <div class="totals-line discount">
+        <span class="totals-line-label">Discount</span>
+        <span class="totals-line-dots"></span>
+        <span class="totals-line-value">-<%= fmt(locals.discount) %></span>
+      </div>
+      <% } %>
+      <div class="totals-line">
+        <span class="totals-line-label">Tax</span>
+        <span class="totals-line-dots"></span>
+        <span class="totals-line-value"><%= fmt(locals.taxes) %></span>
+      </div>
+      <div class="totals-grand">
+        <span class="totals-grand-label">Total Due</span>
+        <span class="totals-grand-value"><%= fmt(locals.total) %></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <% if (locals.show_signature && locals.signature) { %>
+  <div class="signature-section">
+    <div class="sig-block">
+      <img class="sig-img" src="<%= locals.signature %>" alt="Signature" />
+      <div class="sig-line">Authorized Signature</div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- TERMS -->
+  <% if (locals.terms) { %>
+  <div class="terms-section">
+    <div class="terms-label">Terms &amp; Conditions</div>
+    <div class="terms-text"><%= locals.terms %></div>
+  </div>
+  <% } %>
+
+  <!-- FOOTER -->
+  <div class="footer-gold-rule">
+    <div class="gold-rule-wrap">
+      <div class="gold-rule-thin"></div>
+      <div class="gold-rule"></div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-thanks">Thank you for your continued trust and business.</div>
+  </div>
+
+</div>
 </body>
 </html>

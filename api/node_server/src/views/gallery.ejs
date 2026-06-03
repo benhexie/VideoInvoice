@@ -1,173 +1,373 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SnapQuote - Invoice Template Gallery</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      body {
-        font-family: "Inter", sans-serif;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-50 h-screen flex overflow-hidden">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <div class="p-6 border-b border-gray-200">
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-          SnapQuote
-        </h1>
-        <p class="text-sm text-gray-500 mt-1">Template Gallery</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnapQuote — Invoice Templates</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ────────────────────────────────────────────── */
+    .nav {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0 40px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo {
+      width: 32px;
+      height: 32px;
+      background: #3b82f6;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .nav-title { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .nav-sub   { font-size: 12px; color: #94a3b8; }
+
+    /* ── HERO ───────────────────────────────────────────── */
+    .hero {
+      padding: 56px 40px 40px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+
+    .hero p {
+      margin-top: 12px;
+      font-size: 16px;
+      color: #64748b;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ── GRID ───────────────────────────────────────────── */
+    .grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 40px 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 28px;
+    }
+
+    /* ── CARD ───────────────────────────────────────────── */
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -1px rgba(0,0,0,0.04);
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      box-shadow: 0 10px 24px -4px rgba(0,0,0,0.12), 0 4px 8px -2px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
+
+    /* ── PREVIEW FRAME ──────────────────────────────────── */
+    .preview-wrap {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .preview-wrap iframe {
+      width: 800px;
+      height: 1100px;
+      border: none;
+      transform-origin: top left;
+      transform: scale(0.275);
+      pointer-events: none;
+      display: block;
+    }
+
+    .preview-overlay {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+    }
+
+    /* ── CARD BODY ──────────────────────────────────────── */
+    .card-body {
+      padding: 20px 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .card-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .card-badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+
+    .badge-default { background: #eff6ff; color: #3b82f6; }
+    .badge-luxury  { background: #fef9ec; color: #d4a853; }
+    .badge-formal  { background: #f0f4f9; color: #1e3a5f; }
+    .badge-impact  { background: #fef2f2; color: #dc2626; }
+    .badge-classic { background: #eff6ff; color: #1d4ed8; }
+    .badge-clean   { background: #f5f5f5; color: #555; }
+
+    .card-desc {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.55;
+      flex: 1;
+    }
+
+    /* ── SWATCHES ───────────────────────────────────────── */
+    .swatches {
+      display: flex;
+      gap: 6px;
+      margin: 12px 0;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.06);
+    }
+
+    /* ── CTA ────────────────────────────────────────────── */
+    .card-cta {
+      display: block;
+      text-align: center;
+      padding: 10px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-top: 12px;
+      transition: opacity 0.15s;
+    }
+
+    .card-cta:hover { opacity: 0.85; }
+
+    .cta-modern  { background: #eff6ff; color: #3b82f6; }
+    .cta-premium { background: #1a1a2e; color: #d4a853; }
+    .cta-elegant { background: #f0f4f9; color: #1e3a5f; }
+    .cta-bold    { background: #fef2f2; color: #dc2626; }
+    .cta-classic { background: #eff6ff; color: #1d4ed8; }
+    .cta-minimal { background: #f5f5f5; color: #333; }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .page-footer {
+      text-align: center;
+      padding: 24px 40px 48px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-brand">
+      <div class="nav-logo">SQ</div>
+      <div>
+        <div class="nav-title">SnapQuote</div>
       </div>
+    </div>
+    <div class="nav-sub">6 professional invoice templates</div>
+  </nav>
 
-      <div class="flex-1 overflow-y-auto p-4 space-y-4">
-        <!-- Premium Template Button -->
-        <button
-          onclick="loadTemplate('premium')"
-          id="btn-premium"
-          class="w-full text-left p-4 rounded-xl border-2 border-blue-500 bg-blue-50 transition-all focus:outline-none"
-        >
-          <div class="flex items-center gap-2 mb-1">
-            <div class="font-semibold text-gray-900">Premium</div>
-            <span
-              class="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
-              >Pro</span
-            >
-          </div>
-          <p class="text-xs text-gray-500">
-            Luxurious dark header, beautiful typography, ultimate professional
-            look.
-          </p>
-        </button>
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Invoice Templates</h1>
+    <p>Choose a professional design for your invoices. Each template is fully customizable with your brand colors, logo, and company details.</p>
+  </div>
 
-        <!-- Elegant Template Button -->
-        <button
-          onclick="loadTemplate('elegant')"
-          id="btn-elegant"
-          class="w-full text-left p-4 rounded-xl border-2 border-transparent hover:border-gray-200 bg-white hover:bg-gray-50 transition-all focus:outline-none"
-        >
-          <div class="flex items-center gap-2 mb-1">
-            <div class="font-semibold text-gray-900">Elegant</div>
-            <span
-              class="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
-              >Pro</span
-            >
-          </div>
-          <p class="text-xs text-gray-500">
-            Sophisticated serif fonts with gold accents. High-end and refined.
-          </p>
-        </button>
+  <!-- TEMPLATE GRID -->
+  <div class="grid">
 
-        <!-- Bold Template Button -->
-        <button
-          onclick="loadTemplate('bold')"
-          id="btn-bold"
-          class="w-full text-left p-4 rounded-xl border-2 border-transparent hover:border-gray-200 bg-white hover:bg-gray-50 transition-all focus:outline-none"
-        >
-          <div class="flex items-center gap-2 mb-1">
-            <div class="font-semibold text-gray-900">Bold</div>
-            <span
-              class="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
-              >Pro</span
-            >
-          </div>
-          <p class="text-xs text-gray-500">
-            Vibrant split layout with large typography. Ideal for creative
-            agencies.
-          </p>
-        </button>
-
-        <!-- Modern Template Button -->
-        <button
-          onclick="loadTemplate('modern')"
-          id="btn-modern"
-          class="w-full text-left p-4 rounded-xl border-2 border-transparent hover:border-gray-200 bg-white hover:bg-gray-50 transition-all focus:outline-none"
-        >
-          <div class="font-semibold text-gray-900 mb-1">Modern</div>
-          <p class="text-xs text-gray-500">
-            Bold, clean, shaded headers. Great for tech and modern agencies.
-          </p>
-        </button>
-
-        <!-- Classic Template Button -->
-        <button
-          onclick="loadTemplate('classic')"
-          id="btn-classic"
-          class="w-full text-left p-4 rounded-xl border-2 border-transparent hover:border-gray-200 bg-white hover:bg-gray-50 transition-all focus:outline-none"
-        >
-          <div class="font-semibold text-gray-900 mb-1">Classic</div>
-          <p class="text-xs text-gray-500">
-            Formal serif fonts, solid borders. Perfect for lawyers or
-            consultants.
-          </p>
-        </button>
-
-        <!-- Minimal Template Button -->
-        <button
-          onclick="loadTemplate('minimal')"
-          id="btn-minimal"
-          class="w-full text-left p-4 rounded-xl border-2 border-transparent hover:border-gray-200 bg-white hover:bg-gray-50 transition-all focus:outline-none"
-        >
-          <div class="font-semibold text-gray-900 mb-1">Minimal</div>
-          <p class="text-xs text-gray-500">
-            Sleek, typography-focused, lots of whitespace. Ideal for creatives.
-          </p>
-        </button>
+    <!-- Modern -->
+    <div class="card">
+      <div class="preview-wrap">
+        <iframe src="/demo-invoice/modern" loading="lazy" title="Modern template preview"></iframe>
+        <a class="preview-overlay" href="/demo-invoice/modern" target="_blank" aria-label="Preview Modern template"></a>
       </div>
-
-      <div
-        class="p-6 border-t border-gray-200 bg-gray-50 text-xs text-gray-500"
-      >
-        <p>Live preview uses mock AI-generated data.</p>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-name">Modern</div>
+          <span class="card-badge badge-default">Default</span>
+        </div>
+        <div class="card-desc">Clean, flat design inspired by Material Design. Professional and universally readable — a great choice for any industry.</div>
+        <div class="swatches">
+          <div class="swatch" style="background:#3b82f6"></div>
+          <div class="swatch" style="background:#0f172a"></div>
+          <div class="swatch" style="background:#f8fafc"></div>
+        </div>
+        <a class="card-cta cta-modern" href="/demo-invoice/modern" target="_blank">View Full Size →</a>
       </div>
-    </aside>
+    </div>
 
-    <!-- Main Content (Iframe) -->
-    <main
-      class="flex-1 bg-gray-200 p-8 flex justify-center items-start overflow-y-auto"
-    >
-      <div
-        class="w-full max-w-4xl h-full min-h-[1056px] shadow-2xl rounded-xl overflow-hidden bg-white border border-gray-300"
-      >
-        <iframe
-          id="preview-frame"
-          src="/demo-invoice/premium"
-          class="w-full h-full border-none"
-        ></iframe>
+    <!-- Premium -->
+    <div class="card">
+      <div class="preview-wrap">
+        <iframe src="/demo-invoice/premium" loading="lazy" title="Premium template preview"></iframe>
+        <a class="preview-overlay" href="/demo-invoice/premium" target="_blank" aria-label="Preview Premium template"></a>
       </div>
-    </main>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-name">Premium</div>
+          <span class="card-badge badge-luxury">Luxury</span>
+        </div>
+        <div class="card-desc">Dark header with gold accents. Projects exclusivity and high-end craftsmanship — ideal for architecture, luxury home renovations, and premium services.</div>
+        <div class="swatches">
+          <div class="swatch" style="background:#1a1a2e"></div>
+          <div class="swatch" style="background:#d4a853"></div>
+          <div class="swatch" style="background:#fafafa"></div>
+        </div>
+        <a class="card-cta cta-premium" href="/demo-invoice/premium" target="_blank">View Full Size →</a>
+      </div>
+    </div>
 
-    <script>
-      function loadTemplate(templateName) {
-        // Update iframe src
-        document.getElementById("preview-frame").src =
-          `/demo-invoice/${templateName}`;
+    <!-- Elegant -->
+    <div class="card">
+      <div class="preview-wrap">
+        <iframe src="/demo-invoice/elegant" loading="lazy" title="Elegant template preview"></iframe>
+        <a class="preview-overlay" href="/demo-invoice/elegant" target="_blank" aria-label="Preview Elegant template"></a>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-name">Elegant</div>
+          <span class="card-badge badge-formal">Formal</span>
+        </div>
+        <div class="card-desc">Serif typography with champagne gold accents. Conveys decades of experience without saying a word — perfect for established contractors and professional services.</div>
+        <div class="swatches">
+          <div class="swatch" style="background:#1e3a5f"></div>
+          <div class="swatch" style="background:#c9a84c"></div>
+          <div class="swatch" style="background:#f5f3ef"></div>
+        </div>
+        <a class="card-cta cta-elegant" href="/demo-invoice/elegant" target="_blank">View Full Size →</a>
+      </div>
+    </div>
 
-        // Reset all buttons
-        const buttons = [
-          "premium",
-          "elegant",
-          "bold",
-          "modern",
-          "classic",
-          "minimal",
-        ];
-        buttons.forEach((btn) => {
-          const el = document.getElementById(`btn-${btn}`);
-          el.classList.remove("border-blue-500", "bg-blue-50");
-          el.classList.add("border-transparent", "bg-white");
-        });
+    <!-- Bold -->
+    <div class="card">
+      <div class="preview-wrap">
+        <iframe src="/demo-invoice/bold" loading="lazy" title="Bold template preview"></iframe>
+        <a class="preview-overlay" href="/demo-invoice/bold" target="_blank" aria-label="Preview Bold template"></a>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-name">Bold</div>
+          <span class="card-badge badge-impact">Impact</span>
+        </div>
+        <div class="card-desc">Full-bleed color banner and high-contrast type. Built for contractors who want to stand out — electricians, roofers, and trade professionals.</div>
+        <div class="swatches">
+          <div class="swatch" style="background:#dc2626"></div>
+          <div class="swatch" style="background:#1f2937"></div>
+          <div class="swatch" style="background:#ffffff"></div>
+        </div>
+        <a class="card-cta cta-bold" href="/demo-invoice/bold" target="_blank">View Full Size →</a>
+      </div>
+    </div>
 
-        // Highlight active button
-        const activeEl = document.getElementById(`btn-${templateName}`);
-        activeEl.classList.remove("border-transparent", "bg-white");
-        activeEl.classList.add("border-blue-500", "bg-blue-50");
-      }
-    </script>
-  </body>
+    <!-- Classic -->
+    <div class="card">
+      <div class="preview-wrap">
+        <iframe src="/demo-invoice/classic" loading="lazy" title="Classic template preview"></iframe>
+        <a class="preview-overlay" href="/demo-invoice/classic" target="_blank" aria-label="Preview Classic template"></a>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-name">Classic</div>
+          <span class="card-badge badge-classic">Traditional</span>
+        </div>
+        <div class="card-desc">Traditional letterhead style with a fully bordered table. Timeless, formal, and immediately trusted — great for municipal work and older clientele.</div>
+        <div class="swatches">
+          <div class="swatch" style="background:#1d4ed8"></div>
+          <div class="swatch" style="background:#111111"></div>
+          <div class="swatch" style="background:#f5f5f5"></div>
+        </div>
+        <a class="card-cta cta-classic" href="/demo-invoice/classic" target="_blank">View Full Size →</a>
+      </div>
+    </div>
+
+    <!-- Minimal -->
+    <div class="card">
+      <div class="preview-wrap">
+        <iframe src="/demo-invoice/minimal" loading="lazy" title="Minimal template preview"></iframe>
+        <a class="preview-overlay" href="/demo-invoice/minimal" target="_blank" aria-label="Preview Minimal template"></a>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-name">Minimal</div>
+          <span class="card-badge badge-clean">Clean</span>
+        </div>
+        <div class="card-desc">Swiss-style typography with monospaced numbers. No decorative elements — only whitespace and type. Favored by design studios and modern tech-forward businesses.</div>
+        <div class="swatches">
+          <div class="swatch" style="background:#111111"></div>
+          <div class="swatch" style="background:#999999"></div>
+          <div class="swatch" style="background:#f5f5f5"></div>
+        </div>
+        <a class="card-cta cta-minimal" href="/demo-invoice/minimal" target="_blank">View Full Size →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="page-footer">
+    SnapQuote · Professional Invoice Templates · All templates support custom brand colors, logos, and signatures.
+  </div>
+
+</body>
 </html>
