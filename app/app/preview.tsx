@@ -14,11 +14,15 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { CONFIG } from "../config";
 import { ChevronLeft } from "lucide-react-native";
+import { useTheme } from "@/context/ThemeContext";
+import { AppColors } from "@/constants/Colors";
 
 export default function PreviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +35,6 @@ export default function PreviewScreen() {
         setLoading(true);
         setError(null);
 
-        // 1. Get user settings + invoice-level template override in parallel
         const [settingsSnap, invoiceSnap] = await Promise.all([
           getDoc(doc(db, "users", user.uid, "settings", "invoice")),
           getDoc(doc(db, "invoices", id)),
@@ -41,12 +44,10 @@ export default function PreviewScreen() {
         if (settingsSnap.exists()) {
           customization = settingsSnap.data();
         }
-        // Invoice-level template overrides the global default
         if (invoiceSnap.exists() && invoiceSnap.data().template) {
           customization = { ...customization, template: invoiceSnap.data().template };
         }
 
-        // 2. Fetch preview HTML from backend
         const token = await user.getIdToken();
         const res = await fetch(CONFIG.api.endpoints.previewQuote(id), {
           method: "POST",
@@ -63,8 +64,6 @@ export default function PreviewScreen() {
 
         let html = await res.text();
 
-        // Force the viewport to a fixed desktop-like width so the WebView
-        // scales it down to fit the mobile screen without cutting off the right side.
         html = html.replace(
           /<meta\s+name=["']viewport["']\s+content=["'][^"']*["']\s*\/?>/i,
           '<meta name="viewport" content="width=1024">',
@@ -86,7 +85,7 @@ export default function PreviewScreen() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft color="#fff" size={28} />
+          <ChevronLeft color={colors.textPrimary} size={28} />
         </TouchableOpacity>
         <Text style={styles.title}>Invoice Preview</Text>
       </View>
@@ -94,7 +93,7 @@ export default function PreviewScreen() {
       <View style={styles.content}>
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#4F46E5" />
+            <ActivityIndicator size="large" color={colors.accent} />
             <Text style={styles.loadingText}>Generating preview...</Text>
           </View>
         ) : error ? (
@@ -102,13 +101,7 @@ export default function PreviewScreen() {
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity
               style={styles.retryBtn}
-              onPress={() => {
-                setLoading(true);
-                setError(null);
-                // The effect will not re-run just by setting state, so we'd ideally extract fetchPreview
-                // For simplicity, user can just go back and re-enter.
-                router.back();
-              }}
+              onPress={() => router.back()}
             >
               <Text style={styles.retryBtnText}>Go Back</Text>
             </TouchableOpacity>
@@ -126,23 +119,25 @@ export default function PreviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#18181B",
+    backgroundColor: c.surface,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#18181B",
+    backgroundColor: c.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: c.border,
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: c.surfaceRaised,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -150,11 +145,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#fff",
+    color: c.textPrimary,
   },
   content: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#fff", // always white — renders an HTML invoice document
   },
   webview: {
     flex: 1,
@@ -164,20 +159,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+    backgroundColor: c.surface,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#6B7280",
+    color: c.textSecondary,
   },
   errorText: {
     fontSize: 16,
-    color: "#EF4444",
+    color: c.error,
     marginBottom: 16,
     textAlign: "center",
   },
   retryBtn: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: c.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

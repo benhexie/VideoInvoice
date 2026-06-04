@@ -24,6 +24,8 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext";
+import { AppColors } from "@/constants/Colors";
 
 const { height } = Dimensions.get("window");
 
@@ -62,7 +64,7 @@ function RippleRing({ delay }: { delay: number }) {
           height: 100,
           borderRadius: 50,
           borderWidth: 1.5,
-          borderColor: "#4F46E5",
+          borderColor: "#4F46E5", // always brand accent — decorative ring
         },
         animStyle,
       ]}
@@ -70,7 +72,7 @@ function RippleRing({ delay }: { delay: number }) {
   );
 }
 
-function FloatingIcon() {
+function FloatingIcon({ colors }: { colors: AppColors }) {
   const translateY = useSharedValue(0);
 
   useEffect(() => {
@@ -88,9 +90,10 @@ function FloatingIcon() {
     transform: [{ translateY: translateY.value }],
   }));
 
+  const styles = createStyles(colors);
   return (
     <Animated.View style={[styles.iconCircle, animStyle]}>
-      <Mail color="#818CF8" size={44} strokeWidth={1.5} />
+      <Mail color={colors.accentLight} size={44} strokeWidth={1.5} />
     </Animated.View>
   );
 }
@@ -101,6 +104,8 @@ export default function VerifyScreen() {
   const [resendLoading, setResendLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const handleContinue = async () => {
     setLoading(true);
@@ -145,24 +150,21 @@ export default function VerifyScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Gradient background */}
       <LinearGradient
-        colors={["rgba(79,70,229,0.2)", "rgba(9,9,11,0)"]}
+        colors={[colors.gradientStart, "rgba(0,0,0,0)"]}
         style={styles.topGradient}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
 
       <View style={styles.inner}>
-        {/* Animated icon with ripple rings */}
         <Animated.View entering={FadeInDown.springify().damping(14).delay(100)} style={styles.iconContainer}>
           <RippleRing delay={0} />
           <RippleRing delay={700} />
           <RippleRing delay={1400} />
-          <FloatingIcon />
+          <FloatingIcon colors={colors} />
         </Animated.View>
 
-        {/* Text */}
         <Animated.View entering={FadeInDown.springify().damping(14).delay(250)} style={styles.textContainer}>
           <Text style={styles.title}>Check your email</Text>
           <Text style={styles.subtitle}>
@@ -174,7 +176,6 @@ export default function VerifyScreen() {
           </Text>
         </Animated.View>
 
-        {/* Actions */}
         <Animated.View entering={FadeInDown.springify().damping(14).delay(400)} style={styles.actionContainer}>
           {error ? (
             <View style={styles.errorContainer}>
@@ -211,10 +212,10 @@ export default function VerifyScreen() {
             activeOpacity={0.85}
           >
             {resendLoading ? (
-              <ActivityIndicator color="#818CF8" />
+              <ActivityIndicator color={colors.accentLight} />
             ) : (
               <>
-                <RefreshCw color="#818CF8" size={18} />
+                <RefreshCw color={colors.accentLight} size={18} />
                 <Text style={styles.secondaryButtonText}>Resend email</Text>
               </>
             )}
@@ -225,10 +226,10 @@ export default function VerifyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#09090B",
+    backgroundColor: c.background,
   },
   topGradient: {
     position: "absolute",
@@ -252,12 +253,12 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "rgba(79,70,229,0.12)",
+    backgroundColor: c.accentSubtle,
     borderWidth: 1,
-    borderColor: "rgba(79,70,229,0.3)",
+    borderColor: c.accentBorder,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#4F46E5",
+    shadowColor: c.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
@@ -270,32 +271,32 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: "800",
-    color: "#FAFAFA",
+    color: c.textPrimary,
     marginBottom: 14,
     letterSpacing: -0.6,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#A1A1AA",
+    color: c.textSecondary,
     textAlign: "center",
     marginBottom: 12,
     lineHeight: 24,
   },
   emailText: {
-    color: "#FAFAFA",
+    color: c.textPrimary,
     fontWeight: "700",
   },
   description: {
     fontSize: 14,
-    color: "#52525B",
+    color: c.textDisabled,
     textAlign: "center",
     lineHeight: 22,
     paddingHorizontal: 12,
   },
   actionContainer: {},
   button: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: c.accent,
     borderRadius: 16,
     height: 56,
     flexDirection: "row",
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginBottom: 14,
-    shadowColor: "#4F46E5",
+    shadowColor: c.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 14,
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   secondaryButton: {
-    backgroundColor: "rgba(24,24,27,0.8)",
+    backgroundColor: c.surface,
     borderRadius: 16,
     height: 56,
     flexDirection: "row",
@@ -326,36 +327,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: "rgba(79,70,229,0.3)",
+    borderColor: c.accentBorder,
   },
   secondaryButtonText: {
-    color: "#818CF8",
+    color: c.accentLight,
     fontSize: 16,
     fontWeight: "600",
   },
   errorContainer: {
-    backgroundColor: "rgba(239,68,68,0.1)",
+    backgroundColor: c.errorSubtle,
     borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.2)",
+    borderColor: c.error,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: "#EF4444",
+    color: c.error,
     fontSize: 14,
     textAlign: "center",
   },
   successContainer: {
-    backgroundColor: "rgba(16,185,129,0.1)",
+    backgroundColor: c.successSubtle,
     borderWidth: 1,
-    borderColor: "rgba(16,185,129,0.2)",
+    borderColor: c.success,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   successText: {
-    color: "#10B981",
+    color: c.success,
     fontSize: 14,
     textAlign: "center",
   },

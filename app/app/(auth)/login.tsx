@@ -37,9 +37,12 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext";
+import { AppColors } from "@/constants/Colors";
 
 const { height } = Dimensions.get("window");
 
+// Colors passed as props so interpolateColor can be called inside the Reanimated worklet
 function AnimatedInput({
   icon,
   placeholder,
@@ -51,6 +54,13 @@ function AnimatedInput({
   showToggle,
   onToggle,
   showing,
+  borderColorFrom,
+  borderColorTo,
+  bgColorFrom,
+  bgColorTo,
+  textColor,
+  placeholderColor,
+  colors,
 }: {
   icon: React.ReactNode;
   placeholder: string;
@@ -62,43 +72,43 @@ function AnimatedInput({
   showToggle?: boolean;
   onToggle?: () => void;
   showing?: boolean;
+  borderColorFrom: string;
+  borderColorTo: string;
+  bgColorFrom: string;
+  bgColorTo: string;
+  textColor: string;
+  placeholderColor: string;
+  colors: AppColors;
 }) {
   const focused = useSharedValue(0);
+  const s = createStyles(colors);
 
   const borderStyle = useAnimatedStyle(() => ({
-    borderColor: interpolateColor(focused.value, [0, 1], ["#27272A", "#4F46E5"]),
-    backgroundColor: interpolateColor(
-      focused.value,
-      [0, 1],
-      ["#18181B", "#1C1C2E"]
-    ),
+    borderColor: interpolateColor(focused.value, [0, 1], [borderColorFrom, borderColorTo]),
+    backgroundColor: interpolateColor(focused.value, [0, 1], [bgColorFrom, bgColorTo]),
   }));
 
   return (
-    <Animated.View style={[styles.inputContainer, borderStyle]}>
-      <View style={styles.inputIcon}>{icon}</View>
+    <Animated.View style={[s.inputContainer, borderStyle]}>
+      <View style={s.inputIcon}>{icon}</View>
       <TextInput
-        style={styles.input}
+        style={[s.input, { color: textColor }]}
         placeholder={placeholder}
-        placeholderTextColor="#52525B"
+        placeholderTextColor={placeholderColor}
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry && !showing}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize ?? "none"}
-        onFocus={() => {
-          focused.value = withTiming(1, { duration: 200 });
-        }}
-        onBlur={() => {
-          focused.value = withTiming(0, { duration: 200 });
-        }}
+        onFocus={() => { focused.value = withTiming(1, { duration: 200 }); }}
+        onBlur={() => { focused.value = withTiming(0, { duration: 200 }); }}
       />
       {showToggle && (
-        <TouchableOpacity onPress={onToggle} style={styles.eyeButton} hitSlop={12}>
+        <TouchableOpacity onPress={onToggle} style={s.eyeButton} hitSlop={12}>
           {showing ? (
-            <EyeOff color="#52525B" size={18} />
+            <EyeOff color={placeholderColor} size={18} />
           ) : (
-            <Eye color="#52525B" size={18} />
+            <Eye color={placeholderColor} size={18} />
           )}
         </TouchableOpacity>
       )}
@@ -117,10 +127,10 @@ export default function LoginScreen() {
     (params.message as string) || ""
   );
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
-  // Pulsing logo glow
   const logoGlow = useSharedValue(0.25);
-  // Orb float
   const orbY = useSharedValue(0);
 
   useEffect(() => {
@@ -194,6 +204,16 @@ export default function LoginScreen() {
     }
   };
 
+  const inputProps = {
+    borderColorFrom: colors.border,
+    borderColorTo: colors.accent,
+    bgColorFrom: colors.surface,
+    bgColorTo: colors.inputFocusedBg,
+    textColor: colors.textPrimary,
+    placeholderColor: colors.textDisabled,
+    colors,
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -201,9 +221,8 @@ export default function LoginScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          {/* Decorative top section */}
           <LinearGradient
-            colors={["rgba(79,70,229,0.28)", "rgba(9,9,11,0)"]}
+            colors={[colors.gradientStart, "rgba(0,0,0,0)"]}
             style={styles.topGradient}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
@@ -216,7 +235,6 @@ export default function LoginScreen() {
             ]}
           />
 
-          {/* Logo + header */}
           <Animated.View
             entering={FadeInDown.duration(500).delay(100)}
             style={styles.header}
@@ -228,14 +246,13 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>Sign in to continue to SnapQuote AI</Text>
           </Animated.View>
 
-          {/* Form */}
           <Animated.View
             entering={FadeInDown.duration(500).delay(180)}
             style={styles.form}
           >
             {successMessage ? (
               <View style={styles.successContainer}>
-                <Sparkles color="#10B981" size={14} style={{ marginRight: 8 }} />
+                <Sparkles color={colors.success} size={14} style={{ marginRight: 8 }} />
                 <Text style={styles.successText}>{successMessage}</Text>
               </View>
             ) : null}
@@ -247,7 +264,8 @@ export default function LoginScreen() {
             ) : null}
 
             <AnimatedInput
-              icon={<Mail color="#52525B" size={20} />}
+              {...inputProps}
+              icon={<Mail color={colors.textDisabled} size={20} />}
               placeholder="Email address"
               value={email}
               onChangeText={setEmail}
@@ -255,7 +273,8 @@ export default function LoginScreen() {
             />
 
             <AnimatedInput
-              icon={<Lock color="#52525B" size={20} />}
+              {...inputProps}
+              icon={<Lock color={colors.textDisabled} size={20} />}
               placeholder="Password"
               value={password}
               onChangeText={setPassword}
@@ -289,7 +308,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Footer */}
           <Animated.View
             entering={FadeInDown.duration(500).delay(280)}
             style={styles.footer}
@@ -305,10 +323,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#09090B",
+    backgroundColor: c.background,
   },
   inner: {
     flex: 1,
@@ -325,7 +343,7 @@ const styles = StyleSheet.create({
   },
   bgOrb: {
     position: "absolute",
-    backgroundColor: "#4F46E5",
+    backgroundColor: c.accent,
     opacity: 0.15,
   },
   header: {
@@ -335,12 +353,12 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 68,
     height: 68,
-    backgroundColor: "#4F46E5",
+    backgroundColor: c.accent,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
-    shadowColor: "#4F46E5",
+    shadowColor: c.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 28,
     elevation: 10,
@@ -354,7 +372,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 34,
     fontWeight: "800",
-    color: "#FAFAFA",
+    color: c.textPrimary,
     marginBottom: 8,
     letterSpacing: -0.8,
     textAlign: "center",
@@ -362,37 +380,37 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "#71717A",
+    color: c.textTertiary,
     textAlign: "center",
   },
   form: {
     marginBottom: 28,
   },
   errorContainer: {
-    backgroundColor: "rgba(239,68,68,0.1)",
+    backgroundColor: c.errorSubtle,
     borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.2)",
+    borderColor: c.error,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: "#EF4444",
+    color: c.error,
     fontSize: 14,
     textAlign: "center",
   },
   successContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(16,185,129,0.1)",
+    backgroundColor: c.successSubtle,
     borderWidth: 1,
-    borderColor: "rgba(16,185,129,0.2)",
+    borderColor: c.success,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   successText: {
-    color: "#10B981",
+    color: c.success,
     fontSize: 14,
     flex: 1,
   },
@@ -410,7 +428,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: "#FAFAFA",
     fontSize: 16,
     height: "100%",
   },
@@ -424,19 +441,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   forgotPasswordText: {
-    color: "#818CF8",
+    color: c.accentLight,
     fontSize: 14,
     fontWeight: "600",
   },
   button: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: c.accent,
     borderRadius: 16,
     height: 56,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
-    shadowColor: "#4F46E5",
+    shadowColor: c.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 14,
@@ -456,11 +473,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: "#71717A",
+    color: c.textTertiary,
     fontSize: 15,
   },
   footerLink: {
-    color: "#818CF8",
+    color: c.accentLight,
     fontSize: 15,
     fontWeight: "700",
   },

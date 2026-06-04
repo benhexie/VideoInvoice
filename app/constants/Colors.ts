@@ -1,19 +1,56 @@
-const tintColorLight = '#2f95dc';
-const tintColorDark = '#fff';
-
-export default {
-  light: {
-    text: '#000',
-    background: '#fff',
-    tint: tintColorLight,
-    tabIconDefault: '#ccc',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#fff',
-    background: '#000',
-    tint: tintColorDark,
-    tabIconDefault: '#ccc',
-    tabIconSelected: tintColorDark,
-  },
+const dark = {
+  background: "#09090B",
+  surface: "#18181B",
+  surfaceRaised: "#27272A",
+  border: "#27272A",
+  borderSubtle: "#3F3F46",
+  textPrimary: "#FAFAFA",
+  textSecondary: "#A1A1AA",
+  textTertiary: "#71717A",
+  textDisabled: "#52525B",
+  accent: "#4F46E5",
+  accentLight: "#818CF8",
+  accentSubtle: "rgba(79,70,229,0.15)",
+  accentBorder: "rgba(79,70,229,0.35)",
+  gradientStart: "rgba(79,70,229,0.28)",
+  inputFocusedBg: "#1C1C2E",
+  success: "#10B981",
+  successSubtle: "rgba(16,185,129,0.10)",
+  error: "#EF4444",
+  errorSubtle: "rgba(239,68,68,0.08)",
+  warning: "#F59E0B",
+  tabBar: "#09090B",
+  tabBarBorder: "#27272A",
+  overlay: "rgba(0,0,0,0.70)",
 };
+
+const light = {
+  background: "#FAFAFA",
+  surface: "#FFFFFF",
+  surfaceRaised: "#F4F4F5",
+  border: "#E4E4E7",
+  borderSubtle: "#D4D4D8",
+  textPrimary: "#09090B",
+  textSecondary: "#71717A",
+  textTertiary: "#A1A1AA",
+  textDisabled: "#A1A1AA",
+  accent: "#4F46E5",
+  accentLight: "#6366F1",
+  accentSubtle: "rgba(79,70,229,0.10)",
+  accentBorder: "rgba(79,70,229,0.25)",
+  gradientStart: "rgba(79,70,229,0.12)",
+  inputFocusedBg: "#EEF2FF",
+  success: "#059669",
+  successSubtle: "rgba(16,185,129,0.08)",
+  error: "#DC2626",
+  errorSubtle: "rgba(239,68,68,0.06)",
+  warning: "#D97706",
+  tabBar: "#FFFFFF",
+  tabBarBorder: "#E4E4E7",
+  overlay: "rgba(0,0,0,0.50)",
+};
+
+export type AppColors = typeof dark;
+
+const Colors = { dark, light };
+export default Colors;

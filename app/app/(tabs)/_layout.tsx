@@ -1,19 +1,21 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { Platform, View, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 import { Camera, FileText, User } from "lucide-react-native";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function TabLayout() {
+  const { colors } = useTheme();
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#4F46E5",
-        tabBarInactiveTintColor: "#A1A1AA",
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#09090B",
+          backgroundColor: colors.tabBar,
           borderTopWidth: 1,
-          borderTopColor: "#27272A",
+          borderTopColor: colors.tabBarBorder,
           paddingBottom: Platform.OS === "ios" ? 20 : 10,
           paddingTop: 10,
           height: Platform.OS === "ios" ? 85 : 65,

@@ -23,9 +23,12 @@ import Animated, {
 import { Sparkles, ArrowRight, PartyPopper } from "lucide-react-native";
 import { useAuth } from "../../context/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext";
+import { AppColors } from "@/constants/Colors";
 
 const { width, height } = Dimensions.get("window");
 
+// Sparkle colors are intentional brand decoratives — keep as literals
 const SPARKLES = [
   { size: 8, top: 0.12, left: 0.08, color: "#818CF8", dur: 3200, delay: 0, dist: 18 },
   { size: 6, top: 0.18, left: 0.75, color: "#A78BFA", dur: 4000, delay: 400, dist: 14 },
@@ -100,6 +103,8 @@ function SparkleParticle({
 export default function WelcomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -129,31 +134,28 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Gradient */}
       <LinearGradient
-        colors={["rgba(124,58,237,0.2)", "rgba(9,9,11,0)"]}
+        colors={[colors.gradientStart, "rgba(0,0,0,0)"]}
         style={styles.topGradient}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Floating sparkle particles */}
       {SPARKLES.map((s, i) => (
         <SparkleParticle key={i} {...s} />
       ))}
 
       <View style={styles.content}>
         <View style={styles.topSection}>
-          {/* Floating icon */}
           <Animated.View style={[styles.iconContainer, iconAnimStyle]} entering={FadeIn.duration(800)}>
             <View style={styles.iconGlow}>
-              <PartyPopper color="#818CF8" size={64} strokeWidth={1.5} />
+              <PartyPopper color={colors.accentLight} size={64} strokeWidth={1.5} />
             </View>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.springify().damping(14).delay(300)}>
             <View style={styles.badgeContainer}>
-              <Sparkles color="#818CF8" size={13} style={{ marginRight: 6 }} />
+              <Sparkles color={colors.accentLight} size={13} style={{ marginRight: 6 }} />
               <Text style={styles.badgeText}>Welcome to SnapQuote</Text>
             </View>
           </Animated.View>
@@ -192,10 +194,10 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#09090B",
+    backgroundColor: c.background,
     overflow: "hidden",
   },
   topGradient: {
@@ -223,11 +225,11 @@ const styles = StyleSheet.create({
     width: 128,
     height: 128,
     borderRadius: 64,
-    backgroundColor: "rgba(79,70,229,0.12)",
+    backgroundColor: c.accentSubtle,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(79,70,229,0.25)",
+    borderColor: c.accentBorder,
     shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
@@ -238,23 +240,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "rgba(79,70,229,0.15)",
+    backgroundColor: c.accentSubtle,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 100,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(79,70,229,0.3)",
+    borderColor: c.accentBorder,
   },
   badgeText: {
-    color: "#818CF8",
+    color: c.accentLight,
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   title: {
-    color: "#FAFAFA",
+    color: c.textPrimary,
     fontSize: 42,
     fontWeight: "800",
     lineHeight: 50,
@@ -262,7 +264,7 @@ const styles = StyleSheet.create({
     letterSpacing: -1.2,
   },
   subtitle: {
-    color: "#71717A",
+    color: c.textTertiary,
     fontSize: 16,
     lineHeight: 26,
     paddingRight: 20,
@@ -271,14 +273,14 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 10 : 20,
   },
   primaryButton: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: c.accent,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 18,
     gap: 8,
-    shadowColor: "#4F46E5",
+    shadowColor: c.accent,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 16,

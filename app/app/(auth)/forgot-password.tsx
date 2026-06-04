@@ -5,6 +5,8 @@ import { auth } from '../../firebaseConfig';
 import { useRouter } from 'expo-router';
 import { Mail, ArrowLeft, Send } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useTheme } from '@/context/ThemeContext';
+import { AppColors } from '@/constants/Colors';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -12,6 +14,8 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const handleResetPassword = async () => {
     if (!email) {
@@ -33,19 +37,19 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          
+
           <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <ArrowLeft color="#A1A1AA" size={24} />
+              <ArrowLeft color={colors.textSecondary} size={24} />
             </TouchableOpacity>
             <View style={styles.iconPlaceholder}>
-              <Mail color="#4F46E5" size={32} />
+              <Mail color={colors.accent} size={32} />
             </View>
             <Text style={styles.title}>Reset Password</Text>
             <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
@@ -65,11 +69,11 @@ export default function ForgotPasswordScreen() {
             ) : null}
 
             <View style={styles.inputContainer}>
-              <Mail color="#A1A1AA" size={20} style={styles.inputIcon} />
+              <Mail color={colors.textSecondary} size={20} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Email address"
-                placeholderTextColor="#A1A1AA"
+                placeholderTextColor={colors.textSecondary}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -77,9 +81,9 @@ export default function ForgotPasswordScreen() {
               />
             </View>
 
-            <TouchableOpacity 
-              style={[styles.button, (loading || success) && styles.buttonDisabled]} 
-              onPress={handleResetPassword} 
+            <TouchableOpacity
+              style={[styles.button, (loading || success) && styles.buttonDisabled]}
+              onPress={handleResetPassword}
               disabled={loading || success}
             >
               {loading ? (
@@ -99,10 +103,10 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090B',
+    backgroundColor: c.background,
   },
   inner: {
     flex: 1,
@@ -124,24 +128,24 @@ const styles = StyleSheet.create({
   iconPlaceholder: {
     width: 64,
     height: 64,
-    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    backgroundColor: c.accentSubtle,
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(79, 70, 229, 0.2)',
+    borderColor: c.accentBorder,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FAFAFA',
+    color: c.textPrimary,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#A1A1AA',
+    color: c.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 20,
   },
@@ -149,28 +153,28 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: c.errorSubtle,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: c.error,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: '#EF4444',
+    color: c.error,
     fontSize: 14,
     textAlign: 'center',
   },
   successContainer: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: c.successSubtle,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderColor: c.success,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   successText: {
-    color: '#10B981',
+    color: c.success,
     fontSize: 14,
     textAlign: 'center',
     fontWeight: '500',
@@ -178,9 +182,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: '#27272A',
+    borderColor: c.border,
     borderRadius: 16,
     marginBottom: 24,
     paddingHorizontal: 16,
@@ -191,18 +195,18 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#FAFAFA',
+    color: c.textPrimary,
     fontSize: 16,
     height: '100%',
   },
   button: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: c.accent,
     borderRadius: 16,
     height: 56,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#4F46E5',
+    shadowColor: c.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

@@ -21,6 +21,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Camera, Mic, Zap, ArrowRight, Sparkles } from "lucide-react-native";
+import { useTheme } from "@/context/ThemeContext";
+import { AppColors } from "@/constants/Colors";
 
 const { width, height } = Dimensions.get("window");
 
@@ -85,11 +87,13 @@ function FeaturePill({
   label,
   delay,
   translateYOffset,
+  colors,
 }: {
   icon: React.ReactNode;
   label: string;
   delay: number;
   translateYOffset: number;
+  colors: AppColors;
 }) {
   const translateY = useSharedValue(0);
 
@@ -111,18 +115,19 @@ function FeaturePill({
     transform: [{ translateY: translateY.value + translateYOffset }],
   }));
 
+  const s = createStyles(colors);
   return (
     <Animated.View
       entering={FadeInDown.springify().damping(14).delay(delay)}
-      style={[styles.pill, animStyle]}
+      style={[s.pill, animStyle]}
     >
-      <View style={styles.pillIcon}>{icon}</View>
-      <Text style={styles.pillLabel}>{label}</Text>
+      <View style={s.pillIcon}>{icon}</View>
+      <Text style={s.pillLabel}>{label}</Text>
     </Animated.View>
   );
 }
 
-function PulsingButton({ onPress }: { onPress: () => void }) {
+function PulsingButton({ onPress, colors }: { onPress: () => void; colors: AppColors }) {
   const glow = useSharedValue(0.3);
 
   useEffect(() => {
@@ -140,14 +145,15 @@ function PulsingButton({ onPress }: { onPress: () => void }) {
     shadowOpacity: glow.value,
   }));
 
+  const s = createStyles(colors);
   return (
-    <Animated.View style={[styles.primaryButton, glowStyle]}>
+    <Animated.View style={[s.primaryButton, glowStyle]}>
       <TouchableOpacity
-        style={styles.primaryButtonInner}
+        style={s.primaryButtonInner}
         onPress={onPress}
         activeOpacity={0.85}
       >
-        <Text style={styles.primaryButtonText}>Get Started</Text>
+        <Text style={s.primaryButtonText}>Get Started</Text>
         <ArrowRight color="#fff" size={20} />
       </TouchableOpacity>
     </Animated.View>
@@ -156,54 +162,37 @@ function PulsingButton({ onPress }: { onPress: () => void }) {
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   return (
     <View style={styles.container}>
-      {/* Animated background orbs */}
       <FloatingOrb color="#4F46E5" size={320} top={-80} left={-60} delay={0} duration={5000} distance={40} />
       <FloatingOrb color="#7C3AED" size={260} top={height * 0.3} left={width * 0.5} delay={600} duration={7000} distance={55} />
       <FloatingOrb color="#0EA5E9" size={200} top={height * 0.65} left={-40} delay={300} duration={6000} distance={35} />
 
-      {/* Top gradient overlay */}
       <LinearGradient
-        colors={["rgba(79,70,229,0.22)", "transparent"]}
+        colors={[colors.gradientStart, "transparent"]}
         style={styles.topGradient}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
 
       <View style={styles.content}>
-        {/* Feature pills hero */}
         <Animated.View entering={FadeIn.delay(100).duration(600)} style={styles.heroSection}>
           <View style={styles.pillsRow}>
-            <FeaturePill
-              icon={<Camera color="#818CF8" size={20} />}
-              label="Snap a photo"
-              delay={300}
-              translateYOffset={0}
-            />
-            <FeaturePill
-              icon={<Mic color="#A78BFA" size={20} />}
-              label="Describe the job"
-              delay={450}
-              translateYOffset={20}
-            />
+            <FeaturePill icon={<Camera color="#818CF8" size={20} />} label="Snap a photo" delay={300} translateYOffset={0} colors={colors} />
+            <FeaturePill icon={<Mic color="#A78BFA" size={20} />} label="Describe the job" delay={450} translateYOffset={20} colors={colors} />
           </View>
           <View style={[styles.pillsRow, { justifyContent: "center" }]}>
-            <FeaturePill
-              icon={<Zap color="#38BDF8" size={20} />}
-              label="Invoice in seconds"
-              delay={600}
-              translateYOffset={-10}
-            />
+            <FeaturePill icon={<Zap color="#38BDF8" size={20} />} label="Invoice in seconds" delay={600} translateYOffset={-10} colors={colors} />
           </View>
         </Animated.View>
 
-        {/* Text block */}
         <View style={styles.textContainer}>
           <Animated.View entering={FadeInDown.springify().damping(14).delay(400)}>
             <View style={styles.badgeContainer}>
-              <Sparkles color="#818CF8" size={12} style={{ marginRight: 6 }} />
+              <Sparkles color={colors.accentLight} size={12} style={{ marginRight: 6 }} />
               <Text style={styles.badgeText}>Powered by AI</Text>
             </View>
           </Animated.View>
@@ -232,21 +221,18 @@ export default function OnboardingScreen() {
           </Animated.Text>
         </View>
 
-        {/* CTA buttons */}
         <Animated.View
           entering={FadeInDown.springify().damping(14).delay(820)}
           style={styles.footer}
         >
-          <PulsingButton onPress={() => router.push("/(auth)/signup")} />
+          <PulsingButton onPress={() => router.push("/(auth)/signup")} colors={colors} />
 
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => router.push("/(auth)/login")}
             activeOpacity={0.8}
           >
-            <Text style={styles.secondaryButtonText}>
-              I already have an account
-            </Text>
+            <Text style={styles.secondaryButtonText}>I already have an account</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -254,10 +240,10 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#09090B",
+    backgroundColor: c.background,
     overflow: "hidden",
   },
   topGradient: {
@@ -290,9 +276,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(24,24,27,0.85)",
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: "rgba(79,70,229,0.35)",
+    borderColor: c.accentBorder,
     borderRadius: 100,
     paddingHorizontal: 18,
     paddingVertical: 12,
@@ -301,12 +287,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(79,70,229,0.15)",
+    backgroundColor: c.accentSubtle,
     justifyContent: "center",
     alignItems: "center",
   },
   pillLabel: {
-    color: "#E4E4E7",
+    color: c.textPrimary,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -317,23 +303,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "rgba(79,70,229,0.15)",
+    backgroundColor: c.accentSubtle,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 100,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "rgba(79,70,229,0.3)",
+    borderColor: c.accentBorder,
   },
   badgeText: {
-    color: "#818CF8",
+    color: c.accentLight,
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   title: {
-    color: "#FAFAFA",
+    color: c.textPrimary,
     fontSize: 42,
     fontWeight: "800",
     lineHeight: 50,
@@ -341,17 +327,17 @@ const styles = StyleSheet.create({
     letterSpacing: -1.2,
   },
   titleHighlight: {
-    color: "#818CF8",
+    color: c.accentLight,
   },
   subtitle: {
-    color: "#A1A1AA",
+    color: c.textSecondary,
     fontSize: 16,
     lineHeight: 25,
     fontWeight: "400",
     marginBottom: 14,
   },
   socialProof: {
-    color: "#52525B",
+    color: c.textDisabled,
     fontSize: 13,
     fontWeight: "500",
     letterSpacing: 0.3,
@@ -361,13 +347,13 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     borderRadius: 16,
-    shadowColor: "#4F46E5",
+    shadowColor: c.accent,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 16,
     elevation: 6,
   },
   primaryButtonInner: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: c.accent,
     height: 56,
     borderRadius: 16,
     flexDirection: "row",
@@ -385,12 +371,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(24,24,27,0.7)",
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: "#3F3F46",
+    borderColor: c.borderSubtle,
   },
   secondaryButtonText: {
-    color: "#D4D4D8",
+    color: c.textSecondary,
     fontSize: 16,
     fontWeight: "600",
   },
