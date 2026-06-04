@@ -104,6 +104,7 @@ async fn health_check() -> &'static str {
 #[derive(Deserialize, Clone)]
 struct ProcessQuoteRequest {
     user_id: String,
+    invoice_id: Option<String>,
     media_urls: Vec<String>,
     prompt: String,
     project_name: String,
@@ -165,7 +166,7 @@ async fn process_single_media(url: String, gemini: GeminiClient) -> Vec<Part> {
             Ok(response) => {
                 match response.bytes().await {
                     Ok(bytes) => {
-                        let mime = if url.to_lowercase().contains(".mov") { "video/quicktime" }
+                        let mime = if url.to_lowercase().contains(".mov") { "video/mov" }
                                    else if url.to_lowercase().contains(".webm") { "video/webm" }
                                    else { "video/mp4" };
                         match gemini.upload_to_file_api(bytes.to_vec(), mime, "job_site_video").await {
@@ -282,7 +283,9 @@ async fn process_quote(
     let total_start = Instant::now();
     println!("Received quote request for user {} (Project: {})", payload.user_id, payload.project_name);
 
-    let invoice_id = uuid::Uuid::new_v4().to_string();
+    let invoice_id = payload.invoice_id.clone()
+        .filter(|id| !id.is_empty())
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
     let current_timestamp = chrono::Utc::now().timestamp_millis();
 
     let stub_invoice = Invoice {

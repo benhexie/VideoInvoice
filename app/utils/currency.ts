@@ -52,3 +52,11 @@ export const getCurrencySymbol = (code?: string): string => {
 
   return code; // Fallback to code if symbol not found
 };
+
+export const formatAmount = (value: number): string => {
+  if (value === null || value === undefined || isNaN(value)) return "0.00";
+  const abs = Math.abs(value).toFixed(2);
+  const [integer, decimal] = abs.split(".");
+  const formatted = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "." + decimal;
+  return value < 0 ? `-${formatted}` : formatted;
+};

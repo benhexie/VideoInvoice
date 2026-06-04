@@ -25,7 +25,7 @@ import {
 import { ref, deleteObject } from "firebase/storage";
 import { db, storage } from "../../firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
-import { getCurrencySymbol } from "../../utils/currency";
+import { getCurrencySymbol, formatAmount } from "../../utils/currency";
 
 interface Invoice {
   id: string;
@@ -158,7 +158,7 @@ export default function InvoicesScreen() {
     if (amount === undefined || amount === null) return "$0.00";
 
     const symbol = getCurrencySymbol(currencyCode);
-    return `${symbol}${amount.toFixed(2)}`;
+    return `${symbol}${formatAmount(amount)}`;
   };
 
   const handleDelete = (item: Invoice) => {

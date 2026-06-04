@@ -38,53 +38,75 @@ impl GeminiClient {
         Ok(result)
     }
 
-    /// Uploads raw bytes to the Gemini File API and returns the hosted file_uri.
-    /// Uses a raw multipart/related body because reqwest's multipart helper produces
-    /// multipart/form-data which the Files API does not accept.
+    /// Uploads raw bytes to the Gemini File API using the resumable upload protocol.
+    /// This works for any file size and is what Google recommends for media files.
     pub async fn upload_to_file_api(
         &self,
         bytes: Vec<u8>,
         mime_type: &str,
         display_name: &str,
     ) -> Result<String, anyhow::Error> {
-        let boundary = "snap_quote_boundary";
+        let file_size = bytes.len();
         let metadata = serde_json::json!({"file": {"display_name": display_name}}).to_string();
 
-        let mut body: Vec<u8> = Vec::new();
-        body.extend(format!("--{boundary}\r\nContent-Type: application/json; charset=utf-8\r\n\r\n").as_bytes());
-        body.extend(metadata.as_bytes());
-        body.extend(b"\r\n");
-        body.extend(format!("--{boundary}\r\nContent-Type: {mime_type}\r\n\r\n").as_bytes());
-        body.extend(&bytes);
-        body.extend(format!("\r\n--{boundary}--\r\n").as_bytes());
-
-        let url = format!(
+        // Step 1: Initiate the resumable upload session.
+        let init_url = format!(
             "https://generativelanguage.googleapis.com/upload/v1beta/files?key={}",
             self.api_key
         );
-        let response = self.client
-            .post(&url)
-            .header("Content-Type", format!("multipart/related; boundary={boundary}"))
-            .body(body)
+        let init_response = self.client
+            .post(&init_url)
+            .header("X-Goog-Upload-Protocol", "resumable")
+            .header("X-Goog-Upload-Command", "start")
+            .header("X-Goog-Upload-Header-Content-Length", file_size.to_string())
+            .header("X-Goog-Upload-Header-Content-Type", mime_type)
+            .header("Content-Type", "application/json")
+            .body(metadata)
             .send()
             .await?;
 
-        if !response.status().is_success() {
-            let err = response.text().await?;
+        if !init_response.status().is_success() {
+            let err = init_response.text().await?;
+            return Err(anyhow::anyhow!("File API initiation failed: {}", err));
+        }
+
+        // The upload URL comes back in a response header.
+        let upload_url = init_response
+            .headers()
+            .get("X-Goog-Upload-URL")
+            .ok_or_else(|| anyhow::anyhow!("No X-Goog-Upload-URL in initiation response"))?
+            .to_str()?
+            .to_string();
+
+        // Step 2: Upload all bytes in one shot and finalize.
+        let upload_response = self.client
+            .post(&upload_url)
+            .header("Content-Length", file_size.to_string())
+            .header("X-Goog-Upload-Offset", "0")
+            .header("X-Goog-Upload-Command", "upload, finalize")
+            .body(bytes)
+            .send()
+            .await?;
+
+        if !upload_response.status().is_success() {
+            let err = upload_response.text().await?;
             return Err(anyhow::anyhow!("File API upload failed: {}", err));
         }
 
-        let resp: serde_json::Value = response.json().await?;
+        let resp: serde_json::Value = upload_response.json().await?;
         let file_uri = resp["file"]["uri"]
             .as_str()
-            .ok_or_else(|| anyhow::anyhow!("No file URI in File API response"))?
+            .ok_or_else(|| anyhow::anyhow!("No file URI in upload response"))?
             .to_string();
         let file_name = resp["file"]["name"]
             .as_str()
-            .ok_or_else(|| anyhow::anyhow!("No file name in File API response"))?
+            .ok_or_else(|| anyhow::anyhow!("No file name in upload response"))?
             .to_string();
 
-        self.wait_for_file_active(&file_name).await?;
+        // Videos need processing time before Gemini can use them.
+        if resp["file"]["state"].as_str().unwrap_or("") != "ACTIVE" {
+            self.wait_for_file_active(&file_name).await?;
+        }
         Ok(file_uri)
     }
 
@@ -106,11 +128,19 @@ impl GeminiClient {
     }
 
     pub async fn generate_invoice(&self, prompt: &str, project_name: &str, currency: &str, mut parts: Vec<Part>) -> Result<Invoice, anyhow::Error> {
-        let system_instruction = format!("You are an expert construction estimator. Generate a professional invoice. \
-            Calculate realistic quantities, unit prices, and totals. Output ONLY valid JSON matching the exact structure requested, \
-            with no markdown formatting or backticks. All currency values should be in {}. \
-            If a price list document is included in the context, you MUST use the prices from that document for any matching line items — \
-            do not estimate or override prices that appear in the price list.", currency);
+        let system_instruction = format!(
+            "You are an expert construction estimator. The user has submitted a job site video in which \
+            they narrate the work to be done out loud. \
+            STEP 1 — Transcribe: listen carefully to the spoken audio and write out the full narration \
+            verbatim into the `transcript` field. Do not summarise or paraphrase. \
+            STEP 2 — Build the invoice: use the transcript as your PRIMARY source of line items. \
+            Every task, material, or scope item the user mentions must become a line item. \
+            Only fall back to visual analysis of the video frames if the audio track is silent or absent. \
+            STEP 3 — Price: calculate realistic quantities, unit prices, and totals. All currency values must be in {}. \
+            If a price list document is included, you MUST use those prices for any matching items — do not override them. \
+            Output ONLY valid JSON matching the exact structure requested, with no markdown formatting or backticks.",
+            currency
+        );
 
         let json_schema = serde_json::json!({
             "type": "object",

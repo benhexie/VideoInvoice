@@ -43,7 +43,7 @@ import {
 } from "lucide-react-native";
 import { CONFIG } from "../../config";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { getCurrencySymbol, searchCurrency, Currency } from "../../utils/currency";
+import { getCurrencySymbol, searchCurrency, Currency, formatAmount } from "../../utils/currency";
 import { Video, ResizeMode } from "expo-av";
 
 const INVOICE_TEMPLATES = [
@@ -896,24 +896,23 @@ export default function InvoiceReviewScreen() {
                       style={{ fontSize: 12, color: "#EF4444", marginTop: 4 }}
                     >
                       Discount: {item.discount_percentage}% (-{currencySymbol}
-                      {item.discount?.toFixed(2) || "0.00"})
+                      {formatAmount(item.discount ?? 0)})
                     </Text>
                   ) : item.discount ? (
                     <Text
                       style={{ fontSize: 12, color: "#EF4444", marginTop: 4 }}
                     >
                       Discount: -{currencySymbol}
-                      {item.discount.toFixed(2)}
+                      {formatAmount(item.discount)}
                     </Text>
                   ) : null}
                 </View>
                 <View style={styles.priceRow}>
                   <Text style={styles.itemPrice}>
                     {currencySymbol}
-                    {(
-                      item.quantity * item.unit_price -
-                      (item.discount || 0)
-                    ).toFixed(2)}
+                    {formatAmount(
+                      item.quantity * item.unit_price - (item.discount || 0)
+                    )}
                   </Text>
                   <Edit2 color="#888" size={16} style={{ marginLeft: 8 }} />
                 </View>
@@ -932,7 +931,7 @@ export default function InvoiceReviewScreen() {
               <Text style={styles.totalText}>Total</Text>
               <Text style={styles.totalPrice}>
                 {currencySymbol}
-                {invoice.total}
+                {formatAmount(invoice.total)}
               </Text>
             </View>
           </ScrollView>

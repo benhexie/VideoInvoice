@@ -23,7 +23,7 @@ import {
 import { Video, ResizeMode } from "expo-av";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage, db } from "../../firebaseConfig";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, setDoc } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { CONFIG } from "../../config";
@@ -174,6 +174,7 @@ export default function CameraCaptureScreen() {
       try {
         const videoRecordPromise = cameraRef.current.recordAsync({
           maxDuration: 60,
+          maxFileSize: 75 * 1024 * 1024,
         });
         const data = await videoRecordPromise;
         if (data?.uri) {
@@ -191,6 +192,28 @@ export default function CameraCaptureScreen() {
       "Video is uploading and processing in the background. Check the Invoices tab for updates.",
     );
     router.push("/(tabs)/two");
+
+    // Write a placeholder card to Firestore immediately so the Invoices tab
+    // shows it without waiting for the upload + backend round-trip.
+    const invoiceDocRef = doc(collection(db, "invoices"));
+    const invoiceId = invoiceDocRef.id;
+    const now = Date.now();
+    try {
+      await setDoc(invoiceDocRef, {
+        user_id: user?.uid,
+        project_name: "New Project",
+        date: new Date().toISOString().split("T")[0],
+        status: "processing",
+        created_at: now,
+        currency: currency,
+        line_items: [],
+        subtotal: 0,
+        taxes: 0,
+        total: 0,
+      });
+    } catch (e: any) {
+      console.error("Failed to write invoice stub:", e.message);
+    }
 
     try {
       const response = await fetch(uri);
@@ -210,6 +233,7 @@ export default function CameraCaptureScreen() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          invoice_id: invoiceId,
           media_urls: [downloadURL],
           prompt: "Analyze this video to generate an itemized quote.",
           currency: currency,
@@ -259,10 +283,30 @@ export default function CameraCaptureScreen() {
     setSelectedDoc(null);
     Keyboard.dismiss();
 
+    // Write placeholder to Firestore immediately.
+    const invoiceDocRef = doc(collection(db, "invoices"));
+    const invoiceId = invoiceDocRef.id;
+    const now = Date.now();
+    try {
+      await setDoc(invoiceDocRef, {
+        user_id: user?.uid,
+        project_name: currentDoc?.name?.split(".")[0] || "New Project",
+        date: new Date().toISOString().split("T")[0],
+        status: "processing",
+        created_at: now,
+        currency: currency,
+        line_items: [],
+        subtotal: 0,
+        taxes: 0,
+        total: 0,
+      });
+    } catch (e: any) {
+      console.error("Failed to write invoice stub:", e.message);
+    }
+
     try {
       let documentURL = null;
 
-      // Upload document if selected
       if (currentDoc) {
         const response = await fetch(currentDoc.uri);
         const blob = await response.blob();
@@ -281,14 +325,7 @@ export default function CameraCaptureScreen() {
               "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
           else mimeType = "image/jpeg";
         }
-        const metadata = {
-          contentType: mimeType,
-        };
-        const uploadTask = await uploadBytesResumable(
-          storageRef,
-          blob,
-          metadata,
-        );
+        const uploadTask = await uploadBytesResumable(storageRef, blob, { contentType: mimeType });
         documentURL = await getDownloadURL(uploadTask.ref);
       }
 
@@ -296,6 +333,7 @@ export default function CameraCaptureScreen() {
       const API_URL = CONFIG.api.endpoints.generateQuote;
 
       const payload: any = {
+        invoice_id: invoiceId,
         prompt: currentText || "Analyze the attached document to generate a quote.",
         currency: currency,
       };
@@ -525,6 +563,7 @@ export default function CameraCaptureScreen() {
         facing="back"
         ref={cameraRef}
         mode="video"
+        videoQuality="480p"
       >
         <SafeAreaView style={styles.safeArea} edges={["top"]}>
           {renderHeader()}

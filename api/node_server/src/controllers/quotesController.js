@@ -70,6 +70,7 @@ const generateQuote = async (req, res) => {
     // 2. Forward request to Rust AI Microservice
     const rustPayload = {
       user_id: req.user.uid,
+      invoice_id: req.body.invoice_id || null,
       media_urls: media_urls || [],
       prompt:
         prompt || "Analyze this job site video and create an itemized quote.",
