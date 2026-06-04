@@ -40,6 +40,7 @@ import {
   Layout,
   DollarSign,
   Search,
+  Plus,
 } from "lucide-react-native";
 import { CONFIG } from "../../config";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -241,7 +242,9 @@ export default function InvoiceReviewScreen() {
   const [settings, setSettings] = useState<any>(null);
   const [chatInput, setChatInput] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddingItem, setIsAddingItem] = useState(false);
   const [selectedItem, setSelectedItem] = useState<LineItem | null>(null);
+  const [editDescription, setEditDescription] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editQuantity, setEditQuantity] = useState("");
   const [editDiscount, setEditDiscount] = useState("");
@@ -260,7 +263,7 @@ export default function InvoiceReviewScreen() {
   const panYCurrency = useRef(new RNAnimated.Value(0)).current;
   const panYTemplate = useRef(new RNAnimated.Value(0)).current;
 
-  useEffect(() => { if (isEditing) panY.setValue(0); }, [isEditing]);
+  useEffect(() => { if (isEditing || isAddingItem) panY.setValue(0); }, [isEditing, isAddingItem]);
   useEffect(() => { if (showCurrencyModal) panYCurrency.setValue(0); }, [showCurrencyModal]);
   useEffect(() => { if (showTemplateModal) panYTemplate.setValue(0); }, [showTemplateModal]);
 
@@ -326,7 +329,7 @@ export default function InvoiceReviewScreen() {
       const updatedLineItems = (invoice.line_items || []).map((item) => {
         if (item.id !== selectedItem.id) return item;
         const { discount, discount_percentage, ...rest } = item;
-        const updatedItem: any = { ...rest, unit_price: newPrice, quantity: newQuantity };
+        const updatedItem: any = { ...rest, description: editDescription.trim() || item.description, unit_price: newPrice, quantity: newQuantity };
         if (newDiscount > 0) updatedItem.discount = newDiscount;
         if (newDiscountPercentage !== undefined) updatedItem.discount_percentage = newDiscountPercentage;
         return updatedItem;
@@ -338,6 +341,46 @@ export default function InvoiceReviewScreen() {
       console.error("Failed to save manual edit:", e);
       Alert.alert("Error", "Failed to save edit.");
     } finally { setIsSavingManualEdit(false); }
+  };
+
+  const openAddItem = () => {
+    setSelectedItem(null);
+    setEditDescription("");
+    setEditPrice("");
+    setEditQuantity("1");
+    setEditDiscount("");
+    setDiscountType("amount");
+    setIsAddingItem(true);
+  };
+
+  const saveNewItem = async () => {
+    if (!user || !id || !invoice) return;
+    if (!editDescription.trim()) { Alert.alert("Error", "Please enter a description."); return; }
+    const newPrice = parseFloat(editPrice);
+    const newQuantity = parseInt(editQuantity, 10);
+    if (isNaN(newPrice) || newPrice < 0) { Alert.alert("Error", "Please enter a valid price."); return; }
+    if (isNaN(newQuantity) || newQuantity < 1) { Alert.alert("Error", "Please enter a valid quantity."); return; }
+    setIsAddingItem(false);
+    const newItem: LineItem = {
+      id: Math.random().toString(36).slice(2),
+      description: editDescription.trim(),
+      unit_price: newPrice,
+      quantity: newQuantity,
+    };
+    const updatedLineItems = [...(invoice.line_items || []), newItem];
+    const newSubtotal = updatedLineItems.reduce((sum, item) => sum + item.quantity * item.unit_price - (item.discount || 0), 0);
+    const newTotal = newSubtotal + (invoice.taxes || 0);
+    setDoc(doc(db, "invoices", id), { line_items: updatedLineItems, subtotal: Number(newSubtotal.toFixed(2)), total: Number(newTotal.toFixed(2)) }, { merge: true })
+      .catch((e) => { console.error("Failed to add item:", e); Alert.alert("Error", "Failed to add item."); });
+  };
+
+  const removeLineItem = (itemId: string) => {
+    if (!user || !id || !invoice) return;
+    const updatedLineItems = (invoice.line_items || []).filter((item) => item.id !== itemId);
+    const newSubtotal = updatedLineItems.reduce((sum, item) => sum + item.quantity * item.unit_price - (item.discount || 0), 0);
+    const newTotal = newSubtotal + (invoice.taxes || 0);
+    setDoc(doc(db, "invoices", id), { line_items: updatedLineItems, subtotal: Number(newSubtotal.toFixed(2)), total: Number(newTotal.toFixed(2)) }, { merge: true })
+      .catch((e) => { console.error("Failed to remove item:", e); Alert.alert("Error", "Failed to remove item."); });
   };
 
   const currencySymbol = getCurrencySymbol(invoice?.currency);
@@ -434,10 +477,10 @@ export default function InvoiceReviewScreen() {
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <ChevronLeft color={colors.textPrimary} size={28} />
+            <ChevronLeft color={colors.textPrimary} size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Invoice Review</Text>
-          <View style={{ width: 28 }} />
+          <View style={{ width: 22 }} />
         </View>
         <View style={styles.loadingContainer}>
           <Animated.View entering={FadeIn.duration(500)} style={styles.processingContent}>
@@ -458,23 +501,18 @@ export default function InvoiceReviewScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <ChevronLeft color={colors.textPrimary} size={28} />
+            <ChevronLeft color={colors.textPrimary} size={24} />
           </TouchableOpacity>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>Invoice Review</Text>
-            <View style={styles.proBadge}>
-              <Text style={styles.proBadgeText}>PRO</Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <TouchableOpacity onPress={handleDelete} style={[styles.headerIconBtn, { marginRight: 12, backgroundColor: colors.errorSubtle }]}>
-              <Trash2 color={colors.error} size={18} />
+          <Text style={styles.title} numberOfLines={1}>{invoice.project_name || "Invoice Review"}</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => router.push({ pathname: "/preview" as any, params: { id } })} style={styles.headerIconBtn}>
+              <Eye color={colors.textSecondary} size={22} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push({ pathname: "/preview" as any, params: { id } })} style={[styles.headerIconBtn, { marginRight: 12, backgroundColor: colors.surfaceRaised }]}>
-              <Eye color={colors.textPrimary} size={20} />
+            <TouchableOpacity onPress={generatePDF} disabled={isExporting} style={[styles.headerIconBtn, { opacity: isExporting ? 0.5 : 1 }]}>
+              {isExporting ? <ActivityIndicator color={colors.textSecondary} size="small" /> : <Share color={colors.textSecondary} size={22} />}
             </TouchableOpacity>
-            <TouchableOpacity onPress={generatePDF} disabled={isExporting} style={[styles.headerIconBtn, { backgroundColor: colors.surfaceRaised, opacity: isExporting ? 0.7 : 1 }]}>
-              {isExporting ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Share color={colors.textPrimary} size={20} />}
+            <TouchableOpacity onPress={handleDelete} style={styles.headerIconBtn}>
+              <Trash2 color={colors.error} size={22} />
             </TouchableOpacity>
           </View>
         </View>
@@ -530,6 +568,7 @@ export default function InvoiceReviewScreen() {
                 style={styles.lineItemCard}
                 onPress={() => {
                   setSelectedItem(item);
+                  setEditDescription(item.description);
                   setEditPrice(item.unit_price.toString());
                   setEditQuantity(item.quantity.toString());
                   if (item.discount_percentage) { setEditDiscount(item.discount_percentage.toString()); setDiscountType("percentage"); }
@@ -559,8 +598,24 @@ export default function InvoiceReviewScreen() {
                   <Text style={styles.itemPrice}>{currencySymbol}{formatAmount(item.quantity * item.unit_price - (item.discount || 0))}</Text>
                   <Edit2 color={colors.textSecondary} size={16} style={{ marginLeft: 8 }} />
                 </View>
+                <TouchableOpacity
+                  style={styles.lineItemDeleteBtn}
+                  onPress={() => Alert.alert("Remove Item", `Remove "${item.description}"?`, [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Remove", style: "destructive", onPress: () => removeLineItem(item.id) },
+                  ])}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  disabled={isProcessingEdit}
+                >
+                  <Trash2 color={colors.error} size={15} />
+                </TouchableOpacity>
               </TouchableOpacity>
             ))}
+
+            <TouchableOpacity style={styles.addItemBtn} onPress={openAddItem} disabled={isProcessingEdit}>
+              <Plus color={colors.accent} size={18} />
+              <Text style={styles.addItemText}>Add Item</Text>
+            </TouchableOpacity>
 
             <View style={[styles.totalCard, { backgroundColor: settings?.theme_color || colors.accent, shadowColor: settings?.theme_color || colors.accent }]}>
               <Text style={styles.totalText}>Total</Text>
@@ -609,7 +664,17 @@ export default function InvoiceReviewScreen() {
                     <View style={styles.dragHandle} />
                   </View>
                   <Text style={styles.modalTitle}>Edit Item</Text>
-                  <Text style={styles.modalDesc}>{selectedItem?.description}</Text>
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Description</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={editDescription}
+                    onChangeText={setEditDescription}
+                    placeholder="e.g. Labor — 4 hrs @ $85/hr"
+                    placeholderTextColor={colors.textSecondary}
+                    multiline
+                  />
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -668,6 +733,68 @@ export default function InvoiceReviewScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.modalBtn, styles.saveBtn, { backgroundColor: settings?.theme_color || colors.accent }]} onPress={saveManualEdit}>
                     <Text style={styles.saveBtnText}>Save Changes</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  style={styles.deleteItemBtn}
+                  onPress={() => {
+                    setIsEditing(false);
+                    Alert.alert("Remove Item", `Remove "${selectedItem?.description}"?`, [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Remove", style: "destructive", onPress: () => selectedItem && removeLineItem(selectedItem.id) },
+                    ]);
+                  }}
+                >
+                  <Trash2 color={colors.error} size={16} />
+                  <Text style={styles.deleteItemBtnText}>Delete item</Text>
+                </TouchableOpacity>
+              </RNAnimated.View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* Add Item Modal */}
+        <Modal visible={isAddingItem} transparent animationType="slide" onRequestClose={() => setIsAddingItem(false)}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={() => setIsAddingItem(false)}>
+                <View style={{ flex: 1 }} />
+              </TouchableWithoutFeedback>
+              <RNAnimated.View style={[styles.modalContent, { transform: [{ translateY: panY.interpolate({ inputRange: [0, 1000], outputRange: [0, 1000], extrapolate: "clamp" }) }] }]}>
+                <View {...panResponder.panHandlers}>
+                  <View style={styles.dragHandleContainer}>
+                    <View style={styles.dragHandle} />
+                  </View>
+                  <Text style={styles.modalTitle}>Add Item</Text>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Description</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={editDescription}
+                    onChangeText={setEditDescription}
+                    placeholder="e.g. Labor — 4 hrs @ $85/hr"
+                    placeholderTextColor={colors.textSecondary}
+                    multiline
+                    autoFocus
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Quantity</Text>
+                  <TextInput style={styles.modalInput} keyboardType="numeric" value={editQuantity} onChangeText={setEditQuantity} placeholder="1" placeholderTextColor={colors.textSecondary} />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Unit Price ({currencySymbol})</Text>
+                  <TextInput style={styles.modalInput} keyboardType="numeric" value={editPrice} onChangeText={setEditPrice} placeholder="0.00" placeholderTextColor={colors.textSecondary} />
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity style={styles.modalBtn} onPress={() => setIsAddingItem(false)}>
+                    <Text style={styles.modalBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.modalBtn, styles.saveBtn, { backgroundColor: settings?.theme_color || colors.accent }]} onPress={saveNewItem}>
+                    <Text style={styles.saveBtnText}>Add Item</Text>
                   </TouchableOpacity>
                 </View>
               </RNAnimated.View>
@@ -758,16 +885,14 @@ const createStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingHorizontal: 20, paddingVertical: 12, backgroundColor: c.background,
-    borderBottomWidth: 1, borderBottomColor: c.border,
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 12, backgroundColor: c.background,
+    borderBottomWidth: 1, borderBottomColor: c.border, gap: 8,
   },
-  backBtn: { padding: 4, marginLeft: -8 },
-  headerIconBtn: { borderRadius: 18, width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-  titleRow: { flexDirection: "row", alignItems: "center" },
-  title: { fontSize: 20, fontWeight: "bold", color: c.textPrimary },
-  proBadge: { backgroundColor: c.accent, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8 },
-  proBadgeText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
+  backBtn: { padding: 4 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 4 },
+  headerIconBtn: { padding: 8 },
+  title: { flex: 1, fontSize: 17, fontWeight: "600", color: c.textPrimary },
   invoiceScroll: { flex: 1 },
   invoiceScrollContent: { padding: 20, paddingBottom: 40 },
   sectionTitle: { color: c.textPrimary, fontSize: 18, fontWeight: "bold", marginBottom: 16, marginTop: 8 },
@@ -783,7 +908,12 @@ const createStyles = (c: AppColors) => StyleSheet.create({
   transcriptHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   transcriptLabel: { color: c.accentLight, fontSize: 12, fontWeight: "600" },
   transcriptText: { color: c.textSecondary, fontSize: 14, lineHeight: 20 },
-  lineItemCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: c.surface, padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: c.border },
+  lineItemCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: c.surface, padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: c.border, gap: 8 },
+  lineItemDeleteBtn: { padding: 4 },
+  addItemBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderStyle: "dashed", borderColor: c.accentBorder, borderRadius: 16, paddingVertical: 14, marginBottom: 12, backgroundColor: c.accentSubtle },
+  addItemText: { color: c.accent, fontSize: 15, fontWeight: "600" },
+  deleteItemBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, marginTop: 4 },
+  deleteItemBtnText: { color: c.error, fontSize: 14, fontWeight: "600" },
   lineItemContent: { flex: 1, marginRight: 16 },
   lineItemHeader: { flexDirection: "row", alignItems: "center", marginBottom: 6, gap: 8 },
   qtyBadge: { backgroundColor: c.surfaceRaised, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },

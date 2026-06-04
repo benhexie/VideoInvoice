@@ -185,6 +185,9 @@ export default function CameraCaptureScreen() {
       const storageRef = ref(storage, `quotes/${user?.uid}/${Date.now()}.mov`);
       const uploadTask = await uploadBytesResumable(storageRef, blob);
       const downloadURL = await getDownloadURL(uploadTask.ref);
+      // Patch the stub now that we have the Storage URL, so deletion during
+      // the processing window still cleans up the file.
+      await setDoc(invoiceDocRef, { media_url: downloadURL }, { merge: true });
       const token = await user?.getIdToken();
       await fetch(CONFIG.api.endpoints.generateQuote, {
         method: "POST",
@@ -234,6 +237,9 @@ export default function CameraCaptureScreen() {
         }
         const uploadTask = await uploadBytesResumable(storageRef, blob, { contentType: mimeType });
         documentURL = await getDownloadURL(uploadTask.ref);
+        // Patch the stub now that we have the Storage URL, so deletion during
+        // the processing window still cleans up the file.
+        await setDoc(invoiceDocRef, { media_url: documentURL }, { merge: true });
       }
       const token = await user?.getIdToken();
       const payload: any = { invoice_id: invoiceId, prompt: currentText || "Analyze the attached document to generate a quote.", currency };
