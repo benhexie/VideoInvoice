@@ -100,6 +100,10 @@ function RootLayoutNav() {
           name="settings"
           options={{ headerShown: false, presentation: "modal" }}
         />
+        <Stack.Screen
+          name="privacy-security"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
     </ThemeProvider>

@@ -12,10 +12,22 @@ services:
       - ./node_server/.env
     environment:
       - RUST_AI_URL=http://rust_engine:3000/api/ai
+      - PDF_ENGINE_URL=http://pdf_engine:5000
     depends_on:
       - rust_engine
+      - pdf_engine
     networks:
       - snapquote_network
+
+  pdf_engine:
+    build:
+      context: ./pdf_engine
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    networks:
+      - snapquote_network
+    restart: unless-stopped
 
   rust_engine:
     build:

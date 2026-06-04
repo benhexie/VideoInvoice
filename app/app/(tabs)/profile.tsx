@@ -6,13 +6,22 @@ import { auth } from "../../firebaseConfig";
 import { signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
 import {
-  User,
   LogOut,
-  Mail,
   Shield,
   ChevronRight,
   Palette,
 } from "lucide-react-native";
+
+const getInitials = (name?: string | null): string => {
+  if (!name) return "SQ";
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+};
 
 export default function ProfileScreen() {
   const { user } = useAuth();
@@ -33,9 +42,16 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.profileSection}>
-        <View style={styles.avatarContainer}>
-          <User color="#4F46E5" size={40} />
+        <View style={styles.avatarOuterRing}>
+          <View style={styles.avatarInnerRing}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarInitials}>
+                {getInitials(user?.displayName)}
+              </Text>
+            </View>
+          </View>
         </View>
+
         <Text style={styles.nameText}>
           {user?.displayName || "SnapQuote User"}
         </Text>
@@ -50,16 +66,19 @@ export default function ProfileScreen() {
           style={styles.menuItem}
           onPress={() => router.push("/settings")}
         >
-          <View style={styles.menuIcon}>
-            <Palette color="#A1A1AA" size={20} />
+          <View style={[styles.menuIcon, { backgroundColor: "rgba(79, 70, 229, 0.12)" }]}>
+            <Palette color="#818CF8" size={20} />
           </View>
           <Text style={styles.menuText}>Template Customizations</Text>
           <ChevronRight color="#52525B" size={20} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <View style={styles.menuIcon}>
-            <Shield color="#A1A1AA" size={20} />
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push("/privacy-security")}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: "rgba(16, 185, 129, 0.12)" }]}>
+            <Shield color="#10B981" size={20} />
           </View>
           <Text style={styles.menuText}>Privacy & Security</Text>
           <ChevronRight color="#52525B" size={20} />
@@ -96,19 +115,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 32,
     borderBottomWidth: 1,
-    borderBottomColor: "#27272A",
+    borderBottomColor: "#1F1F23",
     marginHorizontal: 24,
   },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(79, 70, 229, 0.1)",
+  avatarOuterRing: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderWidth: 1.5,
+    borderColor: "rgba(79, 70, 229, 0.25)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.3)",
+  },
+  avatarInnerRing: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    borderWidth: 2,
+    borderColor: "rgba(79, 70, 229, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "rgba(79, 70, 229, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarInitials: {
+    color: "#818CF8",
+    fontSize: 32,
+    fontWeight: "700",
+    letterSpacing: 1,
   },
   nameText: {
     fontSize: 22,
@@ -119,19 +160,22 @@ const styles = StyleSheet.create({
   emailText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#A1A1AA",
+    color: "#71717A",
     marginBottom: 12,
   },
   badgeContainer: {
-    backgroundColor: "#27272A",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: "rgba(79, 70, 229, 0.12)",
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(79, 70, 229, 0.3)",
   },
   badgeText: {
-    color: "#A1A1AA",
+    color: "#818CF8",
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   menuSection: {
     paddingHorizontal: 24,
@@ -151,7 +195,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: "#27272A",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -166,16 +209,17 @@ const styles = StyleSheet.create({
     marginTop: "auto",
     paddingHorizontal: 24,
     paddingBottom: 40,
+    marginBottom: 90,
   },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    backgroundColor: "rgba(239, 68, 68, 0.08)",
     paddingVertical: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
+    borderColor: "rgba(239, 68, 68, 0.5)",
     gap: 8,
   },
   logoutText: {

@@ -71,12 +71,7 @@ export default function InvoicesScreen() {
           fetchedInvoices.push({ id: doc.id, ...doc.data() } as Invoice);
         });
 
-        // The query orders by 'date' descending initially.
-        // However, multiple invoices on the same 'date' might be returned in random document ID order.
-        // We do a stable local sort to perfectly arrange them from latest to earliest,
-        // prioritizing 'date' first, and then 'created_at' timestamp if available.
         fetchedInvoices.sort((a, b) => {
-          // Compare dates first (string comparison works for YYYY-MM-DD)
           const dateA =
             typeof a.date === "string"
               ? a.date
@@ -87,13 +82,12 @@ export default function InvoicesScreen() {
               : (b.date as any)?.toDate?.()?.toISOString() || "";
 
           if (dateA !== dateB) {
-            return dateB.localeCompare(dateA); // Descending date
+            return dateB.localeCompare(dateA);
           }
 
-          // If dates are the same, sort by created_at if available
           const timeA = a.created_at || 0;
           const timeB = b.created_at || 0;
-          return timeB - timeA; // Descending timestamp
+          return timeB - timeA;
         });
 
         setInvoices(fetchedInvoices);
@@ -121,8 +115,6 @@ export default function InvoicesScreen() {
   }, [user]);
 
   const onRefresh = () => {
-    // For onSnapshot, pull to refresh is more of a placebo or could just wait for updates.
-    // We can just set refreshing to true briefly.
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   };
@@ -130,7 +122,6 @@ export default function InvoicesScreen() {
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "Unknown date";
 
-    // Handle Firestore Timestamp
     if (timestamp.toDate) {
       return timestamp.toDate().toLocaleDateString("en-US", {
         month: "short",
@@ -141,7 +132,6 @@ export default function InvoicesScreen() {
 
     let dateObj = new Date(timestamp);
 
-    // If it's a "YYYY-MM-DD" string, avoid timezone offset issues by manually parsing
     if (typeof timestamp === "string") {
       const match = timestamp.match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (match) {
@@ -153,7 +143,6 @@ export default function InvoicesScreen() {
       }
     }
 
-    // Check if valid date
     if (isNaN(dateObj.getTime())) {
       return String(timestamp);
     }
@@ -190,7 +179,6 @@ export default function InvoicesScreen() {
                 try {
                   const mediaRef = ref(storage, item.media_url);
                   await deleteObject(mediaRef);
-                  console.log("Deleted associated media:", item.media_url);
                 } catch (mediaErr) {
                   console.error(
                     "Failed to delete media from storage:",
@@ -199,7 +187,6 @@ export default function InvoicesScreen() {
                 }
               }
               await deleteDoc(doc(db, "invoices", item.id));
-              console.log("Invoice deleted successfully");
             } catch (error: any) {
               console.error("Error deleting invoice:", error);
               Alert.alert(
@@ -217,7 +204,7 @@ export default function InvoicesScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Invoices</Text>
-        <Text style={styles.subtitle}>Your recent generated invoices</Text>
+        <Text style={styles.subtitle}>Your generated quotes</Text>
       </View>
 
       {loading ? (
@@ -247,52 +234,61 @@ export default function InvoicesScreen() {
               activeOpacity={0.7}
               onPress={() => router.push(`/invoice/${item.id}`)}
             >
-              <View style={styles.cardTopRow}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <View style={styles.iconContainer}>
-                    <FileText color="#818CF8" size={20} />
+              <View
+                style={[
+                  styles.cardAccent,
+                  item.status === "processing"
+                    ? styles.cardAccentProcessing
+                    : null,
+                ]}
+              />
+              <View style={styles.cardContent}>
+                <View style={styles.cardTopRow}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={styles.iconContainer}>
+                      <FileText color="#818CF8" size={20} />
+                    </View>
+                    <View style={[styles.badgeContainer, { marginLeft: 12 }]}>
+                      <Text style={styles.badgeText}>Invoice</Text>
+                    </View>
                   </View>
-                  <View style={[styles.badgeContainer, { marginLeft: 12 }]}>
-                    <Text style={styles.badgeText}>Invoice</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  onPress={() => handleDelete(item)}
-                  style={styles.deleteButton}
-                >
-                  <Trash2 color="#EF4444" size={20} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.cardTitle} numberOfLines={1}>
-                {item.project_name || "Untitled Invoice"}
-              </Text>
-
-              <View style={styles.cardBottomRow}>
-                <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
-                {item.status === "processing" ? (
-                  <Text
-                    style={[
-                      styles.cardAmount,
-                      { color: "#818CF8", fontSize: 14 },
-                    ]}
+                  <TouchableOpacity
+                    onPress={() => handleDelete(item)}
+                    style={styles.deleteButton}
                   >
-                    Generating...
-                  </Text>
-                ) : (
-                  <Text style={styles.cardAmount}>
-                    {formatCurrency(item.total, item.currency)}
-                  </Text>
-                )}
+                    <Trash2 color="#EF4444" size={18} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                  {item.project_name || "Untitled Invoice"}
+                </Text>
+
+                <View style={styles.cardBottomRow}>
+                  <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
+                  {item.status === "processing" ? (
+                    <View style={styles.processingBadge}>
+                      <ActivityIndicator size="small" color="#818CF8" />
+                      <Text style={styles.processingBadgeText}>Processing</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.cardAmount}>
+                      {formatCurrency(item.total, item.currency)}
+                    </Text>
+                  )}
+                </View>
               </View>
             </TouchableOpacity>
           )}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <FileText color="#52525B" size={48} />
+              <View style={styles.emptyIconContainer}>
+                <FileText color="#4F46E5" size={36} />
+              </View>
               <Text style={styles.emptyStateTitle}>No invoices yet</Text>
               <Text style={styles.emptyStateSub}>
-                Record a video to generate your first invoice.
+                Record a video or describe your project to generate your first
+                quote.
               </Text>
             </View>
           }
@@ -319,47 +315,63 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#A1A1AA",
+    fontSize: 15,
+    color: "#71717A",
     marginTop: 4,
   },
   listContainer: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 100,
+    paddingBottom: 80,
   },
   card: {
     backgroundColor: "#18181B",
-    padding: 20,
     borderRadius: 20,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#27272A",
+    overflow: "hidden",
+    flexDirection: "row",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 5,
+  },
+  cardAccent: {
+    width: 3,
+    backgroundColor: "#4F46E5",
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+  },
+  cardAccentProcessing: {
+    backgroundColor: "#818CF8",
+  },
+  cardContent: {
+    flex: 1,
+    padding: 20,
   },
   cardTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 14,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     backgroundColor: "rgba(99, 102, 241, 0.15)",
     justifyContent: "center",
     alignItems: "center",
   },
   badgeContainer: {
-    backgroundColor: "rgba(34, 197, 94, 0.15)",
+    backgroundColor: "rgba(34, 197, 94, 0.12)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(34, 197, 94, 0.2)",
   },
   badgeText: {
     color: "#4ADE80",
@@ -368,10 +380,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -385,35 +397,63 @@ const styles = StyleSheet.create({
   cardBottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "center",
   },
   cardDate: {
-    fontSize: 14,
-    color: "#A1A1AA",
+    fontSize: 13,
+    color: "#71717A",
     fontWeight: "500",
   },
   cardAmount: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
     color: "#FFFFFF",
     letterSpacing: -0.5,
+  },
+  processingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(129, 140, 248, 0.12)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(129, 140, 248, 0.2)",
+  },
+  processingBadgeText: {
+    color: "#818CF8",
+    fontSize: 13,
+    fontWeight: "600",
   },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 100,
+    paddingHorizontal: 32,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(79, 70, 229, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(79, 70, 229, 0.2)",
   },
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#fff",
-    marginTop: 16,
+    marginBottom: 8,
   },
   emptyStateSub: {
     fontSize: 14,
-    color: "#A1A1AA",
-    marginTop: 8,
+    color: "#71717A",
     textAlign: "center",
+    lineHeight: 20,
   },
   centerContainer: {
     flex: 1,

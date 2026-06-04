@@ -5,6 +5,7 @@ const {
   editQuote,
   previewInvoice,
   previewTemplate,
+  exportInvoice,
 } = require("../controllers/quotesController");
 const router = express.Router();
 
@@ -31,5 +32,11 @@ router.post("/template-preview/:name", previewTemplate);
  * @description Previews an invoice with customizable template data. Returns HTML.
  */
 router.post("/:id/preview", validateAuth, previewInvoice);
+
+/**
+ * @route POST /api/quotes/:id/export
+ * @description Exports an invoice as a PDF using headless Chrome. Returns application/pdf.
+ */
+router.post("/:id/export", validateAuth, exportInvoice);
 
 module.exports = router;

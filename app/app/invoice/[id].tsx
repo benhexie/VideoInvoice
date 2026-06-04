@@ -23,7 +23,7 @@ import { doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, deleteObject } from "firebase/storage";
 import { db, storage } from "../../firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
-import * as Print from "expo-print";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import {
   Share,
@@ -499,15 +499,13 @@ export default function InvoiceReviewScreen() {
     setIsExporting(true);
 
     try {
-      // 1. Get user settings, applying invoice-level template override if set
-      let customization = { ...(settings || {}) };
-      if (invoice.template) {
-        customization.template = invoice.template;
-      }
+      // Build customization payload (same as preview)
+      const customization = { ...(settings || {}) };
+      if (invoice.template) customization.template = invoice.template;
 
-      // 2. Fetch preview HTML from backend
+      // Ask the backend to render + export via headless Chrome
       const token = await user.getIdToken();
-      const res = await fetch(CONFIG.api.endpoints.previewQuote(id), {
+      const res = await fetch(CONFIG.api.endpoints.exportQuote(id), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -517,15 +515,30 @@ export default function InvoiceReviewScreen() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to load invoice preview for export");
+        const msg = await res.text();
+        throw new Error(msg || "Export failed");
       }
 
-      const html = await res.text();
+      // Convert the PDF binary response to a base64 string and write to a temp file
+      const arrayBuffer = await res.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
 
-      // 3. Generate PDF and share
-      const { uri } = await Print.printToFileAsync({ html });
+      const fileUri = `${FileSystem.cacheDirectory}invoice-${id}.pdf`;
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: "base64",
+      });
+
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
+        await Sharing.shareAsync(fileUri, {
+          mimeType: "application/pdf",
+          UTI: "com.adobe.pdf",
+          dialogTitle: "Export Invoice",
+        });
       }
     } catch (e: any) {
       console.error("Error generating PDF:", e);
@@ -702,12 +715,7 @@ export default function InvoiceReviewScreen() {
           </TouchableOpacity>
           <View style={styles.titleRow}>
             <Text style={styles.title}>Invoice Review</Text>
-            <View
-              style={[
-                styles.proBadge,
-                { backgroundColor: settings?.theme_color || "#4F46E5" },
-              ]}
-            >
+            <View style={styles.proBadge}>
               <Text style={styles.proBadgeText}>PRO</Text>
             </View>
           </View>
@@ -986,10 +994,7 @@ export default function InvoiceReviewScreen() {
             editable={!isProcessingEdit}
           />
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              { backgroundColor: settings?.theme_color || "#4F46E5" },
-            ]}
+            style={styles.sendButton}
             onPress={handleSendPrompt}
             disabled={isProcessingEdit || !chatInput.trim()}
           >
