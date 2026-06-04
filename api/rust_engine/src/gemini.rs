@@ -1,9 +1,11 @@
 use crate::models::{GeminiRequest, GeminiResponse, Content, Part, SystemInstruction, GenerationConfig, Invoice};
 use reqwest::Client;
 use std::env;
+use std::time::Duration;
 
 const GEMINI_API_URL: &str = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
+#[derive(Clone)]
 pub struct GeminiClient {
     api_key: String,
     client: Client,
@@ -36,16 +38,71 @@ impl GeminiClient {
         Ok(result)
     }
 
-    // Helper to upload media to Gemini File API if using File API directly,
-    // or just return the bytes for inline data if small enough.
-    // For MVP, if it's large video, we need to use Google's Media API upload first.
-    // Placeholder implementation.
-    pub async fn upload_media(&self, _media_url: &str) -> Result<String, anyhow::Error> {
-        // Here we would:
-        // 1. Download from Firebase Storage URL
-        // 2. Upload to Gemini using `https://generativelanguage.googleapis.com/upload/v1beta/files`
-        // 3. Return the `file_uri`
-        Ok("mock_gemini_file_uri".to_string())
+    /// Uploads raw bytes to the Gemini File API and returns the hosted file_uri.
+    /// Uses a raw multipart/related body because reqwest's multipart helper produces
+    /// multipart/form-data which the Files API does not accept.
+    pub async fn upload_to_file_api(
+        &self,
+        bytes: Vec<u8>,
+        mime_type: &str,
+        display_name: &str,
+    ) -> Result<String, anyhow::Error> {
+        let boundary = "snap_quote_boundary";
+        let metadata = serde_json::json!({"file": {"display_name": display_name}}).to_string();
+
+        let mut body: Vec<u8> = Vec::new();
+        body.extend(format!("--{boundary}\r\nContent-Type: application/json; charset=utf-8\r\n\r\n").as_bytes());
+        body.extend(metadata.as_bytes());
+        body.extend(b"\r\n");
+        body.extend(format!("--{boundary}\r\nContent-Type: {mime_type}\r\n\r\n").as_bytes());
+        body.extend(&bytes);
+        body.extend(format!("\r\n--{boundary}--\r\n").as_bytes());
+
+        let url = format!(
+            "https://generativelanguage.googleapis.com/upload/v1beta/files?key={}",
+            self.api_key
+        );
+        let response = self.client
+            .post(&url)
+            .header("Content-Type", format!("multipart/related; boundary={boundary}"))
+            .body(body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let err = response.text().await?;
+            return Err(anyhow::anyhow!("File API upload failed: {}", err));
+        }
+
+        let resp: serde_json::Value = response.json().await?;
+        let file_uri = resp["file"]["uri"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("No file URI in File API response"))?
+            .to_string();
+        let file_name = resp["file"]["name"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("No file name in File API response"))?
+            .to_string();
+
+        self.wait_for_file_active(&file_name).await?;
+        Ok(file_uri)
+    }
+
+    /// Polls the Gemini File API until the uploaded file reaches ACTIVE state.
+    async fn wait_for_file_active(&self, file_name: &str) -> Result<(), anyhow::Error> {
+        for _ in 0..15 {
+            let url = format!(
+                "https://generativelanguage.googleapis.com/v1beta/{}?key={}",
+                file_name, self.api_key
+            );
+            let resp: serde_json::Value = self.client.get(&url).send().await?.json().await?;
+            match resp["state"].as_str().unwrap_or("PROCESSING") {
+                "ACTIVE" => return Ok(()),
+                "FAILED" => return Err(anyhow::anyhow!("Gemini file processing failed")),
+                _ => tokio::time::sleep(Duration::from_secs(2)).await,
+            }
+        }
+        Err(anyhow::anyhow!("Gemini file did not become ACTIVE within timeout"))
     }
 
     pub async fn generate_invoice(&self, prompt: &str, project_name: &str, currency: &str, mut parts: Vec<Part>) -> Result<Invoice, anyhow::Error> {

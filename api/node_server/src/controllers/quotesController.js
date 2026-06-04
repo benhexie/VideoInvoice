@@ -23,16 +23,23 @@ async function inlineExternalImages(html) {
   const srcPattern = /(<img\b[^>]*?\ssrc=")([^"]+)(")/gi;
   const matches = [...html.matchAll(srcPattern)];
 
-  for (const [full, before, url, after] of matches) {
-    if (url.startsWith("data:")) continue;
-    try {
-      const resp = await axios.get(url, { responseType: "arraybuffer", timeout: 10000 });
-      const mime = resp.headers["content-type"]?.split(";")[0] || "image/png";
-      const b64 = Buffer.from(resp.data).toString("base64");
-      html = html.replace(full, `${before}data:${mime};base64,${b64}${after}`);
-    } catch (e) {
-      console.warn(`Could not inline image ${url}:`, e.message);
-    }
+  const replacements = await Promise.all(
+    matches.map(async ([full, before, url, after]) => {
+      if (url.startsWith("data:")) return null;
+      try {
+        const resp = await axios.get(url, { responseType: "arraybuffer", timeout: 10000 });
+        const mime = resp.headers["content-type"]?.split(";")[0] || "image/png";
+        const b64 = Buffer.from(resp.data).toString("base64");
+        return [full, `${before}data:${mime};base64,${b64}${after}`];
+      } catch (e) {
+        console.warn(`Could not inline image ${url}:`, e.message);
+        return null;
+      }
+    })
+  );
+
+  for (const pair of replacements) {
+    if (pair) html = html.replace(pair[0], pair[1]);
   }
   return html;
 }
