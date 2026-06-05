@@ -353,6 +353,7 @@ const fmt = (n) => {
       <div class="party-name"><%= locals.company_name || '' %></div>
       <% if (locals.company_email) { %><div class="party-detail"><%= locals.company_email %></div><% } %>
       <% if (locals.company_phone) { %><div class="party-detail"><%= locals.company_phone %></div><% } %>
+      <% if (locals.company_website) { %><div class="party-detail"><%= locals.company_website %></div><% } %>
     </div>
   </div>
 
@@ -434,6 +435,7 @@ const fmt = (n) => {
     <div class="footer-contact">
       <% if (locals.company_email) { %><div><%= locals.company_email %></div><% } %>
       <% if (locals.company_phone) { %><div><%= locals.company_phone %></div><% } %>
+      <% if (locals.company_website) { %><div><%= locals.company_website %></div><% } %>
     </div>
   </div>
 

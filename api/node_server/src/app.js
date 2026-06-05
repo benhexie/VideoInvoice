@@ -88,6 +88,7 @@ const mockDemoInvoice = {
   company_address: "999 Builders Way, Austin, TX 78701",
   company_phone: "(512) 555-9999",
   company_email: "billing@apexconstruction.com",
+  company_website: "www.apexconstruction.com",
   client_name: "John Smith",
   client_address: "123 Fake Street\nAustin, TX 78704",
   client_email: "john@example.com",

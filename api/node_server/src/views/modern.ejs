@@ -329,7 +329,7 @@ const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
         <div class="company-name"><%= locals.company_name || '' %></div>
         <div class="company-meta">
           <%= locals.company_address || '' %><br>
-          <%= locals.company_phone || '' %><% if (locals.company_phone && locals.company_email) { %> &nbsp;·&nbsp; <% } %><%= locals.company_email || '' %>
+          <%= locals.company_phone || '' %><% if (locals.company_phone && locals.company_email) { %> &nbsp;·&nbsp; <% } %><%= locals.company_email || '' %><% if ((locals.company_phone || locals.company_email) && locals.company_website) { %> &nbsp;·&nbsp; <% } %><%= locals.company_website || '' %>
         </div>
       </div>
     </div>
@@ -360,6 +360,7 @@ const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
       <div class="info-card-name"><%= locals.company_name || '' %></div>
       <div class="info-card-detail"><%= locals.company_address || '' %></div>
       <% if (locals.company_email) { %><div class="info-card-detail"><%= locals.company_email %></div><% } %>
+      <% if (locals.company_website) { %><div class="info-card-detail"><%= locals.company_website %></div><% } %>
     </div>
   </div>
 
@@ -435,6 +436,7 @@ const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
     <div class="footer-contact">
       <% if (locals.company_email) { %><span><%= locals.company_email %></span><% } %>
       <% if (locals.company_phone) { %><span><%= locals.company_phone %></span><% } %>
+      <% if (locals.company_website) { %><span><%= locals.company_website %></span><% } %>
     </div>
     <div class="footer-thanks">Thank you for your business</div>
   </div>

@@ -28,6 +28,7 @@ import {
   MapPin,
   Phone,
   Mail,
+  Globe,
   Image as ImageIcon,
   Crown,
   PenTool,
@@ -49,6 +50,9 @@ const TEMPLATES = [
   { id: "premium", name: "Premium", color: "#7C3AED", isPremium: true },
   { id: "elegant", name: "Elegant", color: "#D4AF37", isPremium: true },
   { id: "bold", name: "Bold", color: "#FF3366", isPremium: true },
+  { id: "studio", name: "Studio", color: "#0F4C75", isPremium: true },
+  { id: "noir", name: "Noir", color: "#00C2CB", isPremium: true },
+  { id: "luxe", name: "Luxe", color: "#B8860B", isPremium: true },
   { id: "modern", name: "Modern", color: "#4F46E5" },
   { id: "classic", name: "Classic", color: "#10B981" },
   { id: "minimal", name: "Minimalist", color: "#F59E0B" },
@@ -69,6 +73,122 @@ const PRESET_COLORS = [
 // Template previews intentionally use literal paper/document colors
 const TemplatePreview = ({ type, color }: { type: string; color: string }) => {
   const dark = "#1a1a2e";
+
+  if (type === "studio") {
+    const sidebarBg = "#0a2d47";
+    return (
+      <View style={[tpStyles.container, { flexDirection: "row", backgroundColor: "#fff" }]}>
+        <View style={{ width: 26, backgroundColor: sidebarBg, padding: 5, justifyContent: "space-between" }}>
+          <View>
+            <View style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 0.5, borderColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center", marginBottom: 5 }}>
+              <Text style={{ fontSize: 7, color: color, fontWeight: "700" }}>A</Text>
+            </View>
+            <View style={{ height: 2, width: 18, backgroundColor: "#fff", borderRadius: 0.5, marginBottom: 1.5, opacity: 0.85 }} />
+            <View style={{ height: 1, width: 14, backgroundColor: "rgba(255,255,255,0.35)", borderRadius: 0.5, marginBottom: 6 }} />
+            <View style={{ height: 0.75, width: "90%", backgroundColor: color, opacity: 0.6, marginBottom: 5 }} />
+            <View style={{ height: 1, width: 10, backgroundColor: color, opacity: 0.7, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1, width: 16, backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 0.5, marginBottom: 4 }} />
+            <View style={{ height: 1, width: 10, backgroundColor: color, opacity: 0.7, borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1.5, width: 18, backgroundColor: "rgba(255,255,255,0.6)", borderRadius: 0.5 }} />
+          </View>
+        </View>
+        <View style={{ flex: 1, backgroundColor: "#fff", padding: 5 }}>
+          <View style={{ marginBottom: 4 }}>
+            <View style={{ height: 1, width: "55%", backgroundColor: "#bbb", borderRadius: 0.5, marginBottom: 1.5 }} />
+            <View style={{ height: 2.5, width: "70%", backgroundColor: color, borderRadius: 0.5 }} />
+          </View>
+          <View style={{ height: 0.5, backgroundColor: "#eee", marginBottom: 4 }} />
+          <View style={{ backgroundColor: sidebarBg, paddingHorizontal: 4, paddingVertical: 2.5, borderRadius: 1, flexDirection: "row", justifyContent: "space-between", marginBottom: 3 }}>
+            <View style={{ height: 1.5, width: "55%", backgroundColor: "rgba(255,255,255,0.5)", borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "18%", backgroundColor: "rgba(255,255,255,0.5)", borderRadius: 0.5 }} />
+          </View>
+          {[55, 43].map((w, i) => (
+            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 2.5, borderBottomWidth: 0.5, borderBottomColor: "#f3f4f6" }}>
+              <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ddd", borderRadius: 0.5 }} />
+              <View style={{ height: 1.5, width: "18%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            </View>
+          ))}
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 4 }}>
+            <View style={{ backgroundColor: sidebarBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 2.5 }}>
+              <Text style={{ fontSize: 5, color: color, fontWeight: "700" }}>$8,250</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (type === "noir") {
+    return (
+      <View style={[tpStyles.container, { backgroundColor: "#0d0d0d" }]}>
+        <View style={{ backgroundColor: "#080808", paddingHorizontal: 7, paddingVertical: 7, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 0.5, borderBottomColor: "#1e1e1e" }}>
+          <View>
+            <Text style={{ fontSize: 8, fontWeight: "700", color: color, letterSpacing: 2 }}>ACME</Text>
+            <View style={{ height: 1, width: 28, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 0.5, marginTop: 2 }} />
+          </View>
+          <Text style={{ fontSize: 16, fontWeight: "900", color: "rgba(255,255,255,0.07)", letterSpacing: 4 }}>INV</Text>
+        </View>
+        <View style={{ height: 0.75, backgroundColor: color, opacity: 0.6, marginHorizontal: 0, shadowColor: color, shadowOpacity: 0.8, shadowRadius: 3 }} />
+        <View style={{ backgroundColor: "#0f0f0f", paddingHorizontal: 7, paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: "#1e1e1e" }}>
+          <View style={{ height: 1, width: "40%", backgroundColor: color, opacity: 0.7, borderRadius: 0.5, marginBottom: 2 }} />
+          <View style={{ height: 1.5, width: "60%", backgroundColor: "rgba(255,255,255,0.5)", borderRadius: 0.5 }} />
+        </View>
+        <View style={{ paddingHorizontal: 7, paddingTop: 4 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingBottom: 2.5, borderBottomWidth: 0.5, borderBottomColor: "#1e1e1e", marginBottom: 1 }}>
+            <View style={{ height: 1.5, width: "50%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "18%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5 }} />
+          </View>
+          {[58, 44].map((w, i) => (
+            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 2.5, borderBottomWidth: 0.5, borderBottomColor: "#1a1a1a" }}>
+              <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 0.5 }} />
+              <View style={{ height: 1.5, width: "18%", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 0.5 }} />
+            </View>
+          ))}
+        </View>
+        <View style={{ backgroundColor: "#080808", flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 7, paddingVertical: 5, marginTop: 3 }}>
+          <Text style={{ fontSize: 9, fontWeight: "900", color: color, letterSpacing: 1 }}>$8,250</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (type === "luxe") {
+    return (
+      <View style={[tpStyles.container, { backgroundColor: "#fff" }]}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", paddingHorizontal: 7, paddingTop: 8, paddingBottom: 6 }}>
+          <View>
+            <View style={{ height: 2.5, width: 38, backgroundColor: "#111", borderRadius: 0.5, marginBottom: 2 }} />
+            <View style={{ height: 1, width: 26, backgroundColor: "#ccc", borderRadius: 0.5 }} />
+          </View>
+          <Text style={{ fontSize: 18, fontWeight: "100", color: "#f0f0f0", letterSpacing: 3, lineHeight: 18 }}>INV</Text>
+        </View>
+        <View style={{ height: 3, backgroundColor: color, marginBottom: 5 }} />
+        <View style={{ flexDirection: "row", paddingHorizontal: 7, paddingBottom: 5, borderBottomWidth: 0.5, borderBottomColor: "#e8e4de" }}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={{ flex: 1, borderLeftWidth: i > 0 ? 0.5 : 0, borderLeftColor: "#e8e4de", paddingLeft: i > 0 ? 4 : 0 }}>
+              <View style={{ height: 1, width: "55%", backgroundColor: color, opacity: 0.7, borderRadius: 0.5, marginBottom: 1.5 }} />
+              <View style={{ height: 1.5, width: "75%", backgroundColor: "#ccc", borderRadius: 0.5 }} />
+            </View>
+          ))}
+        </View>
+        <View style={{ paddingHorizontal: 7, paddingTop: 5 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingBottom: 3, borderBottomWidth: 1.5, borderBottomColor: color, marginBottom: 2 }}>
+            <View style={{ height: 1.5, width: "50%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5 }} />
+            <View style={{ height: 1.5, width: "18%", backgroundColor: color, opacity: 0.8, borderRadius: 0.5 }} />
+          </View>
+          {[58, 44].map((w, i) => (
+            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 3, borderBottomWidth: 0.5, borderBottomColor: "#f0ede8" }}>
+              <View style={{ height: 1.5, width: `${w}%`, backgroundColor: "#ddd", borderRadius: 0.5 }} />
+              <View style={{ height: 1.5, width: "18%", backgroundColor: "#ddd", borderRadius: 0.5 }} />
+            </View>
+          ))}
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingTop: 4 }}>
+            <Text style={{ fontSize: 9, fontWeight: "700", color: color, letterSpacing: 0.5 }}>$8,250</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   if (type === "premium") {
     return (
@@ -315,6 +435,7 @@ export default function SettingsScreen() {
     address: "",
     phone: "",
     email: user?.email || "",
+    website: "",
     companyLogo: "",
     signatureUrl: "",
     currency: "USD",
@@ -326,6 +447,7 @@ export default function SettingsScreen() {
   const [address, setAddress] = useState(initialState.address);
   const [phone, setPhone] = useState(initialState.phone);
   const [email, setEmail] = useState(initialState.email);
+  const [website, setWebsite] = useState(initialState.website);
   const [companyLogo, setCompanyLogo] = useState(initialState.companyLogo);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState(initialState.signatureUrl);
@@ -371,6 +493,7 @@ export default function SettingsScreen() {
     address !== initialState.address ||
     phone !== initialState.phone ||
     email !== initialState.email ||
+    website !== initialState.website ||
     companyLogo !== initialState.companyLogo ||
     signatureUrl !== initialState.signatureUrl ||
     currency !== initialState.currency ||
@@ -391,6 +514,7 @@ export default function SettingsScreen() {
             address: data.address || "",
             phone: data.phone || "",
             email: data.email || user?.email || "",
+            website: data.website || "",
             companyLogo: data.company_logo || "",
             signatureUrl: data.signature_url || "",
             currency: data.currency || "USD",
@@ -403,6 +527,7 @@ export default function SettingsScreen() {
           setAddress(loadedState.address);
           setPhone(loadedState.phone);
           setEmail(loadedState.email);
+          setWebsite(loadedState.website);
           setCompanyLogo(loadedState.companyLogo);
           setSignatureUrl(loadedState.signatureUrl);
           setCurrency(loadedState.currency);
@@ -520,7 +645,7 @@ export default function SettingsScreen() {
 
       const customizationRef = db().collection("users").doc(user.uid).collection("settings").doc("invoice");
       await customizationRef.set({
-        template: selectedTemplate, companyName, address, phone, email,
+        template: selectedTemplate, companyName, address, phone, email, website,
         company_logo: finalLogoUrl, signature_url: finalSignatureUrl,
         currency, theme_color: themeColor,
         price_list_url: finalPriceListUrl, price_list_name: finalPriceListUrl ? priceListName : "",
@@ -530,7 +655,7 @@ export default function SettingsScreen() {
       setCompanyLogo(finalLogoUrl);
       setSignatureUrl(finalSignatureUrl);
       setPriceListUrl(finalPriceListUrl);
-      setInitialState({ template: selectedTemplate, companyName, address, phone, email, companyLogo: finalLogoUrl, signatureUrl: finalSignatureUrl, currency, themeColor, priceListUrl: finalPriceListUrl });
+      setInitialState({ template: selectedTemplate, companyName, address, phone, email, website, companyLogo: finalLogoUrl, signatureUrl: finalSignatureUrl, currency, themeColor, priceListUrl: finalPriceListUrl });
       router.back();
     } catch (e: any) {
       alert("Failed to save settings: " + e.message);
@@ -657,6 +782,7 @@ export default function SettingsScreen() {
               { icon: <MapPin color={colors.textSecondary} size={20} />, placeholder: "Business Address", value: address, onChange: setAddress, keyboard: undefined },
               { icon: <Phone color={colors.textSecondary} size={20} />, placeholder: "Phone Number", value: phone, onChange: setPhone, keyboard: "phone-pad" as any },
               { icon: <Mail color={colors.textSecondary} size={20} />, placeholder: "Business Email", value: email, onChange: setEmail, keyboard: "email-address" as any },
+              { icon: <Globe color={colors.textSecondary} size={20} />, placeholder: "Website (Optional)", value: website, onChange: setWebsite, keyboard: "url" as any },
             ].map((field, i) => (
               <View key={i} style={styles.inputGroup}>
                 <View style={styles.inputIcon}>{field.icon}</View>

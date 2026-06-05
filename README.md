@@ -7,28 +7,28 @@ AI-powered invoicing for field contractors. Point your camera at a job site, des
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Mobile App (Expo)                            │
-│                                                                     │
+┌───────────────────────────────────────────────────────────────────┐
+│                        Mobile App (Expo)                          │
+│                                                                   │
 │  ┌──────────────┐   ┌──────────────┐   ┌───────────────────────┐  │
 │  │ Capture      │   │ Invoice List │   │ Invoice Detail        │  │
 │  │ (video/text/ │   │ (two.tsx)    │   │ ([id].tsx)            │  │
 │  │  document)   │   │              │   │ edit / export / share │  │
 │  └──────┬───────┘   └──────────────┘   └───────────────────────┘  │
 └─────────┼───────────────────────┬─────────────────────────────────┘
-          │ 1. Upload media        │ 5. Listen (realtime snapshot)
+          │ 1. Upload media       │ 5. Listen (realtime snapshot)
           ▼                       │
 ┌─────────────────┐               │
 │ Firebase        │               │
 │ Storage         │               │
 │                 │               ▼
 │ quotes/         │    ┌──────────────────────┐
-│ price_lists/    │    │ Cloud Firestore       │
+│ price_lists/    │    │ Cloud Firestore      │
 │ logos/          │    │                      │
-│ signatures/     │    │  /invoices/{id}       │
-└────────┬────────┘    │  /users/{uid}/        │
-         │ 2. URL       │    settings/invoice   │
-         ▼             └──────────▲────────────┘
+│ signatures/     │    │  /invoices/{id}      │
+└────────┬────────┘    │  /users/{uid}/       │
+         │ 2. URL      │    settings/invoice  │
+         ▼             └──────────▲───────────┘
 ┌──────────────────────────────┐  │ 4. Save completed invoice
 │   Node.js API (Express)      │  │
 │   :8080                      │  │

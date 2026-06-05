@@ -28,6 +28,7 @@ import {
   MapPin,
   Phone,
   Mail,
+  Globe,
   Image as ImageIcon,
   Crown,
   PenTool,
@@ -198,6 +199,7 @@ export default function SetupScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
   const [companyLogo, setCompanyLogo] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState("");
@@ -320,7 +322,7 @@ export default function SetupScreen() {
       await customizationRef.set({
         template: selectedTemplate, themeColor, companyName, address,
         phone: phone ? `${selectedCountry.dial_code} ${phone}` : "",
-        email,
+        email, website,
         company_logo: finalLogoUrl, signature_url: finalSignatureUrl,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
@@ -487,6 +489,20 @@ export default function SetupScreen() {
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Website */}
+              <View style={styles.inputGroup}>
+                <View style={styles.inputIcon}><Globe color={colors.textSecondary} size={20} /></View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Website (Optional)"
+                  placeholderTextColor={colors.textSecondary}
+                  value={website}
+                  onChangeText={setWebsite}
+                  keyboardType="url"
                   autoCapitalize="none"
                 />
               </View>

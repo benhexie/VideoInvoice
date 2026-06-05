@@ -360,6 +360,7 @@ const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
           <% if (locals.company_address) { %><div><%= locals.company_address %></div><% } %>
           <% if (locals.company_phone)   { %><div><%= locals.company_phone %></div><% } %>
           <% if (locals.company_email)   { %><div><%= locals.company_email %></div><% } %>
+          <% if (locals.company_website) { %><div><%= locals.company_website %></div><% } %>
         </div>
       </div>
       <div class="header-right">
@@ -468,6 +469,7 @@ const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
     <div class="footer-contact">
       <% if (locals.company_email) { %><div><%= locals.company_email %></div><% } %>
       <% if (locals.company_phone) { %><div><%= locals.company_phone %></div><% } %>
+      <% if (locals.company_website) { %><div><%= locals.company_website %></div><% } %>
     </div>
   </div>
 

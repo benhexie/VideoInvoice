@@ -287,6 +287,7 @@ const fmt = (n) => {
         <% if (locals.company_phone) { %><%= locals.company_phone %><% } %>
         <% if (locals.company_phone && locals.company_email) { %> &nbsp;·&nbsp; <% } %>
         <% if (locals.company_email) { %><%= locals.company_email %><% } %>
+        <% if ((locals.company_phone || locals.company_email) && locals.company_website) { %> &nbsp;·&nbsp; <% } %><% if (locals.company_website) { %><%= locals.company_website %><% } %>
       </div>
     </div>
     <div class="invoice-section">
@@ -383,6 +384,7 @@ const fmt = (n) => {
     <% if (locals.company_name) { %><span><%= locals.company_name %></span><% } %>
     <% if (locals.company_email) { %><span><%= locals.company_email %></span><% } %>
     <% if (locals.company_phone) { %><span><%= locals.company_phone %></span><% } %>
+    <% if (locals.company_website) { %><span><%= locals.company_website %></span><% } %>
   </div>
 
 </div>

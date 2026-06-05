@@ -168,7 +168,7 @@ const previewTemplate = async (req, res) => {
     const { name } = req.params;
     const { theme_color } = req.body || {};
 
-    const validTemplates = ["premium", "elegant", "bold", "modern", "classic", "minimal"];
+    const validTemplates = ["premium", "elegant", "bold", "modern", "classic", "minimal", "studio", "noir", "luxe"];
     const templateName = validTemplates.includes(name) ? name : "modern";
 
     const sampleLineItems = [
@@ -198,6 +198,7 @@ const previewTemplate = async (req, res) => {
       company_address: "742 Evergreen Terrace, Springfield",
       company_phone: "+1 (555) 234-5678",
       company_email: "info@acmeservices.com",
+      company_website: "www.acmeservices.com",
       theme_color: color,
       theme_color_light: color + "1A",
       currency: "$",
@@ -243,6 +244,7 @@ function buildRenderData(invoiceData, customization) {
     company_address: customization.address || customization.company_address,
     company_phone: customization.phone || customization.company_phone,
     company_email: customization.email || customization.company_email,
+    company_website: customization.website || customization.company_website,
     logo_url: customization.companyLogo || customization.company_logo || customization.logo_url,
     signature: customization.signatureUrl || customization.signature_url || customization.signature,
     show_signature: !!(customization.signatureUrl || customization.signature_url || customization.signature),
@@ -254,7 +256,7 @@ function buildRenderData(invoiceData, customization) {
     dark_color_2: darkenHex(themeColor, 0.22) || "#16213e",
   };
 
-  const validTemplates = ["premium", "elegant", "bold", "modern", "classic", "minimal"];
+  const validTemplates = ["premium", "elegant", "bold", "modern", "classic", "minimal", "studio", "noir", "luxe"];
   const templateName = validTemplates.includes(mapped.template) ? mapped.template : "modern";
   const renderData = { ...invoiceData, ...mapped };
 
