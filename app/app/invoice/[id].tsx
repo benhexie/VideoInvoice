@@ -40,6 +40,7 @@ import {
   Search,
   Plus,
   Lock,
+  CreditCard,
 } from "lucide-react-native";
 import { CONFIG } from "../../config";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -218,6 +219,8 @@ type LineItem = {
 
 type InvoiceData = {
   status?: "processing" | "completed";
+  payment_status?: "unpaid" | "partial" | "paid";
+  amount_paid?: number;
   line_items: LineItem[];
   total: number;
   subtotal: number;
@@ -258,15 +261,21 @@ export default function InvoiceReviewScreen() {
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
   const [currencyResults, setCurrencyResults] = useState<Currency[]>([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingPaymentStatus, setPendingPaymentStatus] = useState<"unpaid" | "partial" | "paid">("unpaid");
+  const [partialAmount, setPartialAmount] = useState("");
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
   const videoRef = useRef<Video>(null);
 
   const panY = useRef(new RNAnimated.Value(0)).current;
   const panYCurrency = useRef(new RNAnimated.Value(0)).current;
   const panYTemplate = useRef(new RNAnimated.Value(0)).current;
+  const panYPayment = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => { if (isEditing || isAddingItem) panY.setValue(0); }, [isEditing, isAddingItem]);
   useEffect(() => { if (showCurrencyModal) panYCurrency.setValue(0); }, [showCurrencyModal]);
   useEffect(() => { if (showTemplateModal) panYTemplate.setValue(0); }, [showTemplateModal]);
+  useEffect(() => { if (showPaymentModal) { panYPayment.setValue(0); setPendingPaymentStatus(invoice?.payment_status || "unpaid"); setPartialAmount(invoice?.amount_paid && invoice.amount_paid > 0 ? invoice.amount_paid.toString() : ""); } }, [showPaymentModal]);
 
   const makePanResponder = (animValue: RNAnimated.Value, onDismiss: () => void) =>
     PanResponder.create({
@@ -282,6 +291,7 @@ export default function InvoiceReviewScreen() {
   const panResponder = useRef(makePanResponder(panY, () => setIsEditing(false))).current;
   const panResponderCurrency = useRef(makePanResponder(panYCurrency, () => setShowCurrencyModal(false))).current;
   const panResponderTemplate = useRef(makePanResponder(panYTemplate, () => setShowTemplateModal(false))).current;
+  const panResponderPayment = useRef(makePanResponder(panYPayment, () => setShowPaymentModal(false))).current;
 
   useEffect(() => {
     if (!user || !id) return;
@@ -450,6 +460,24 @@ export default function InvoiceReviewScreen() {
         },
       },
     ]);
+  };
+
+  const savePaymentStatus = async () => {
+    if (!user || !id || !invoice) return;
+    if (pendingPaymentStatus === "partial") {
+      const val = parseFloat(partialAmount);
+      if (isNaN(val) || val <= 0) { Alert.alert("Invalid Amount", "Please enter a valid amount paid."); return; }
+      if (val >= invoice.total) { Alert.alert("Invalid Amount", "Partial payment must be less than the total. Use 'Paid' for full payment."); return; }
+    }
+    setIsSavingPayment(true);
+    try {
+      const update: any = { payment_status: pendingPaymentStatus };
+      update.amount_paid = pendingPaymentStatus === "partial" ? Number(parseFloat(partialAmount).toFixed(2)) : pendingPaymentStatus === "paid" ? invoice.total : 0;
+      await db().collection("invoices").doc(id).set(update, { merge: true });
+      setShowPaymentModal(false);
+    } catch (e) {
+      Alert.alert("Error", "Failed to update payment status.");
+    } finally { setIsSavingPayment(false); }
   };
 
   const renderMediaPreview = () => {
@@ -626,6 +654,34 @@ export default function InvoiceReviewScreen() {
               <Text style={styles.totalText}>Total</Text>
               <Text style={styles.totalPrice}>{currencySymbol}{formatAmount(invoice.total)}</Text>
             </View>
+
+            <TouchableOpacity style={styles.paymentStatusRow} onPress={() => setShowPaymentModal(true)} activeOpacity={0.7}>
+              <View style={styles.paymentStatusLeft}>
+                <CreditCard color={colors.textSecondary} size={18} />
+                <Text style={styles.paymentStatusLabel}>Payment</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                {invoice.payment_status === "partial" && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{currencySymbol}{formatAmount(invoice.amount_paid || 0)} paid</Text>
+                )}
+                <View style={[
+                  styles.paymentStatusBadge,
+                  invoice.payment_status === "paid" && { backgroundColor: colors.successSubtle, borderColor: colors.success },
+                  invoice.payment_status === "partial" && { backgroundColor: "rgba(245,158,11,0.1)", borderColor: colors.warning },
+                  (!invoice.payment_status || invoice.payment_status === "unpaid") && { backgroundColor: colors.errorSubtle, borderColor: colors.error },
+                ]}>
+                  <Text style={[
+                    styles.paymentStatusBadgeText,
+                    invoice.payment_status === "paid" && { color: colors.success },
+                    invoice.payment_status === "partial" && { color: colors.warning },
+                    (!invoice.payment_status || invoice.payment_status === "unpaid") && { color: colors.error },
+                  ]}>
+                    {invoice.payment_status === "paid" ? "Paid" : invoice.payment_status === "partial" ? "Partial" : "Unpaid"}
+                  </Text>
+                </View>
+                <ChevronDown color={colors.textSecondary} size={16} />
+              </View>
+            </TouchableOpacity>
           </ScrollView>
 
           {(isProcessingEdit || isSavingManualEdit) && (
@@ -896,6 +952,78 @@ export default function InvoiceReviewScreen() {
             </RNAnimated.View>
           </View>
         </Modal>
+        {/* Payment Status Modal */}
+        <Modal visible={showPaymentModal} transparent animationType="slide" onRequestClose={() => setShowPaymentModal(false)}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={() => setShowPaymentModal(false)}>
+                <View style={{ flex: 1 }} />
+              </TouchableWithoutFeedback>
+              <RNAnimated.View style={[styles.modalContent, { transform: [{ translateY: panYPayment.interpolate({ inputRange: [0, 1000], outputRange: [0, 1000], extrapolate: "clamp" }) }] }]}>
+                <View {...panResponderPayment.panHandlers}>
+                  <View style={styles.dragHandleContainer}><View style={styles.dragHandle} /></View>
+                  <Text style={styles.modalTitle}>Payment Status</Text>
+                </View>
+                <Text style={styles.modalDesc}>Update the payment status for this invoice.</Text>
+
+                {(["unpaid", "partial", "paid"] as const).map((option) => {
+                  const isSelected = pendingPaymentStatus === option;
+                  const labelColor = option === "paid" ? colors.success : option === "partial" ? colors.warning : colors.error;
+                  const label = option === "paid" ? "Paid" : option === "partial" ? "Partial Payment" : "Unpaid";
+                  const desc = option === "paid" ? "Full amount has been received" : option === "partial" ? "A partial amount has been received" : "No payment received yet";
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.paymentOptionRow, isSelected && { borderColor: labelColor, backgroundColor: `${labelColor}10` }]}
+                      onPress={() => setPendingPaymentStatus(option)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.paymentOptionRadio, isSelected && { borderColor: labelColor, backgroundColor: labelColor }]} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.paymentOptionLabel, isSelected && { color: labelColor }]}>{label}</Text>
+                        <Text style={styles.paymentOptionDesc}>{desc}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {pendingPaymentStatus === "partial" && (
+                  <View style={[styles.inputGroup, { marginTop: 12 }]}>
+                    <Text style={styles.inputLabel}>Amount Paid ({currencySymbol})</Text>
+                    <View style={[styles.modalInput, { flexDirection: "row", alignItems: "center", padding: 0 }]}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 16, paddingLeft: 16 }}>{currencySymbol}</Text>
+                      <TextInput
+                        style={{ flex: 1, padding: 16, color: colors.textPrimary, fontSize: 16 }}
+                        keyboardType="numeric"
+                        value={partialAmount}
+                        onChangeText={setPartialAmount}
+                        placeholder={`0.00 – ${currencySymbol}${formatAmount(Math.max(0, invoice?.total ? invoice.total - 0.01 : 0))}`}
+                        placeholderTextColor={colors.textDisabled}
+                        autoFocus
+                      />
+                    </View>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6, marginLeft: 4 }}>
+                      Must be less than the total of {currencySymbol}{formatAmount(invoice?.total || 0)}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity style={styles.modalBtn} onPress={() => setShowPaymentModal(false)}>
+                    <Text style={styles.modalBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.saveBtn, { backgroundColor: settings?.theme_color || colors.accent, opacity: isSavingPayment ? 0.6 : 1 }]}
+                    onPress={savePaymentStatus}
+                    disabled={isSavingPayment}
+                  >
+                    {isSavingPayment ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveBtnText}>Save</Text>}
+                  </TouchableOpacity>
+                </View>
+              </RNAnimated.View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -991,4 +1119,13 @@ const createStyles = (c: AppColors) => StyleSheet.create({
   currencyName: { color: c.textSecondary, fontSize: 13, marginTop: 1 },
   currencySymbolText: { color: c.textSecondary, fontSize: 18, fontWeight: "600" },
   currencyEmpty: { color: c.textSecondary, textAlign: "center", marginTop: 40, fontSize: 15 },
+  paymentStatusRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: c.surface, borderRadius: 16, padding: 16, marginTop: 12, borderWidth: 1, borderColor: c.border },
+  paymentStatusLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  paymentStatusLabel: { color: c.textPrimary, fontSize: 15, fontWeight: "600" },
+  paymentStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
+  paymentStatusBadgeText: { fontSize: 13, fontWeight: "700" },
+  paymentOptionRow: { flexDirection: "row", alignItems: "center", gap: 14, padding: 14, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, marginBottom: 10, backgroundColor: c.surfaceRaised },
+  paymentOptionRadio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: c.border },
+  paymentOptionLabel: { color: c.textPrimary, fontSize: 15, fontWeight: "600", marginBottom: 2 },
+  paymentOptionDesc: { color: c.textSecondary, fontSize: 12 },
 });

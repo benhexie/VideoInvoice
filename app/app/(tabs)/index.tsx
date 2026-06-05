@@ -235,7 +235,7 @@ export default function CameraCaptureScreen() {
     const invoiceDocRef = db().collection("invoices").doc();
     const invoiceId = invoiceDocRef.id;
     try {
-      await invoiceDocRef.set({ user_id: user?.uid, project_name: "New Project", date: new Date().toISOString().split("T")[0], status: "processing", created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
+      await invoiceDocRef.set({ user_id: user?.uid, project_name: "New Project", date: new Date().toISOString().split("T")[0], status: "processing", payment_status: "unpaid", amount_paid: 0, created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
     } catch (e: any) { console.error("Failed to write invoice stub:", e.message); }
     try {
       const blob = await (await fetch(uri)).blob();
@@ -290,7 +290,7 @@ export default function CameraCaptureScreen() {
     const invoiceDocRef = db().collection("invoices").doc();
     const invoiceId = invoiceDocRef.id;
     try {
-      await invoiceDocRef.set({ user_id: user?.uid, project_name: currentDoc?.name?.split(".")[0] || "New Project", date: new Date().toISOString().split("T")[0], status: "processing", created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
+      await invoiceDocRef.set({ user_id: user?.uid, project_name: currentDoc?.name?.split(".")[0] || "New Project", date: new Date().toISOString().split("T")[0], status: "processing", payment_status: "unpaid", amount_paid: 0, created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
     } catch (e: any) { console.error("Failed to write invoice stub:", e.message); }
     try {
       let documentURL = null;
@@ -351,6 +351,9 @@ export default function CameraCaptureScreen() {
 
   const handleRemovePriceList = async () => {
     try {
+      if (priceListUrl) {
+        try { await storage().refFromURL(priceListUrl).delete(); } catch {}
+      }
       await db().collection("users").doc(user!.uid).collection("settings").doc("invoice").set({ price_list_url: "", price_list_name: "" }, { merge: true });
       setPriceListUrl(null);
       setPriceListName("");

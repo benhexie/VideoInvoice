@@ -29,8 +29,8 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD};
 #[derive(Clone)]
 struct AppState {
     gemini: GeminiClient,
-    /// Caches raw price-list bytes keyed by download URL. TTL = 10 min.
-    price_list_cache: Arc<Cache<String, Arc<Vec<u8>>>>,
+    /// Caches Gemini File API URIs for uploaded price lists, keyed by download URL. TTL = 10 min.
+    price_list_cache: Arc<Cache<String, Arc<String>>>,
 }
 
 // ── Startup ───────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ async fn main() {
         }
     }
 
-    let price_list_cache = Arc::new(
+    let price_list_cache: Arc<Cache<String, Arc<String>>> = Arc::new(
         Cache::builder()
             .time_to_live(Duration::from_secs(600))
             .max_capacity(50)
@@ -229,29 +229,48 @@ async fn process_single_media(url: String, gemini: GeminiClient) -> Vec<Part> {
     }
 }
 
-/// Downloads (or returns from cache) the user's price list and returns the
-/// two Gemini Parts that introduce it (a label text part + the inline_data part).
+/// Downloads (or returns from cache) the user's price list, uploads it to the
+/// Gemini File API, and returns the two Parts that introduce it. Using the File
+/// API instead of inline_data avoids Gemini's 20 MB inline limit for large PDFs,
+/// Excel sheets, etc. The resulting file URI is cached for 10 min so repeated
+/// requests within the same processing window skip the upload.
 async fn fetch_price_list(
     url: &str,
-    cache: &Cache<String, Arc<Vec<u8>>>,
+    cache: &Cache<String, Arc<String>>,
+    gemini: &GeminiClient,
 ) -> Vec<Part> {
     if url.is_empty() { return vec![]; }
 
     let url_owned = url.to_string();
-    let bytes = cache.get_with(url_owned.clone(), async {
-        match reqwest::get(&url_owned).await {
-            Ok(resp) => match resp.bytes().await {
-                Ok(b) => { println!("Downloaded price list: {}", url_owned); Arc::new(b.to_vec()) }
-                Err(e) => { println!("Failed to read price list bytes: {}", e); Arc::new(vec![]) }
-            },
-            Err(e) => { println!("Failed to download price list: {}", e); Arc::new(vec![]) }
+    let gemini = gemini.clone();
+
+    let file_uri = cache.get_with(url_owned.clone(), async move {
+        let resp = match reqwest::get(&url_owned).await {
+            Ok(r) => r,
+            Err(e) => { println!("Failed to download price list: {}", e); return Arc::new(String::new()); }
+        };
+
+        let content_type = resp.headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.split(';').next())
+            .map(|v| v.trim().to_string())
+            .filter(|v| v != "application/octet-stream" && !v.is_empty())
+            .unwrap_or_else(|| mime_from_url(&url_owned));
+
+        let bytes = match resp.bytes().await {
+            Ok(b) => b.to_vec(),
+            Err(e) => { println!("Failed to read price list bytes: {}", e); return Arc::new(String::new()); }
+        };
+
+        println!("Uploading price list ({}, {} bytes) to Gemini File API", content_type, bytes.len());
+        match gemini.upload_to_file_api(bytes, &content_type, "price_list").await {
+            Ok(uri) => { println!("Price list uploaded to Gemini File API: {}", uri); Arc::new(uri) }
+            Err(e) => { println!("Failed to upload price list to File API: {}", e); Arc::new(String::new()) }
         }
     }).await;
 
-    if bytes.is_empty() { return vec![]; }
-
-    let content_type = mime_from_url(url);
-    println!("Injecting price list ({}) into context", content_type);
+    if file_uri.is_empty() { return vec![]; }
 
     vec![
         Part {
@@ -265,11 +284,11 @@ async fn fetch_price_list(
             text: None,
             function_call: None,
             function_response: None,
-            file_data: None,
-            inline_data: Some(InlineData {
-                mime_type: content_type,
-                data: BASE64_STANDARD.encode(bytes.as_ref()),
+            file_data: Some(FileData {
+                mime_type: mime_from_url(url),
+                file_uri: file_uri.as_ref().clone(),
             }),
+            inline_data: None,
         },
     ]
 }
@@ -327,6 +346,7 @@ async fn process_quote(
         let price_list_fut = fetch_price_list(
             payload.price_list_url.as_deref().unwrap_or(""),
             &state.price_list_cache,
+            &state.gemini,
         );
 
         let (media_results, price_list_parts) =

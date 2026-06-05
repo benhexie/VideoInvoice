@@ -516,6 +516,7 @@ export default function SettingsScreen() {
       };
       await deleteOldImage(initialState.companyLogo, finalLogoUrl);
       await deleteOldImage(initialState.signatureUrl, finalSignatureUrl);
+      await deleteOldImage(initialState.priceListUrl, finalPriceListUrl);
 
       const customizationRef = db().collection("users").doc(user.uid).collection("settings").doc("invoice");
       await customizationRef.set({

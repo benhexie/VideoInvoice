@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   StyleSheet,
   View,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera, FileText, Trash2 } from "lucide-react-native";
@@ -24,6 +25,8 @@ interface Invoice {
   date: any;
   total: number;
   status?: string;
+  payment_status?: "unpaid" | "partial" | "paid";
+  amount_paid?: number;
   media_url?: string;
   prompt?: string;
   currency?: string;
@@ -40,6 +43,7 @@ export default function InvoicesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<"all" | "unpaid" | "partial" | "paid">("all");
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -124,12 +128,56 @@ export default function InvoicesScreen() {
     ]);
   };
 
+  const filteredInvoices = useMemo(() => {
+    if (activeFilter === "all") return invoices;
+    if (activeFilter === "unpaid") return invoices.filter((i) => !i.payment_status || i.payment_status === "unpaid");
+    return invoices.filter((i) => i.payment_status === activeFilter);
+  }, [invoices, activeFilter]);
+
+  const filterCounts = useMemo(() => ({
+    all: invoices.length,
+    unpaid: invoices.filter((i) => !i.payment_status || i.payment_status === "unpaid").length,
+    partial: invoices.filter((i) => i.payment_status === "partial").length,
+    paid: invoices.filter((i) => i.payment_status === "paid").length,
+  }), [invoices]);
+
+  const FILTERS: { key: "all" | "unpaid" | "partial" | "paid"; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "unpaid", label: "Unpaid" },
+    { key: "partial", label: "Partial" },
+    { key: "paid", label: "Paid" },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Invoices</Text>
         <Text style={styles.subtitle}>Your generated quotes</Text>
       </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterBar} style={styles.filterBarScroll}>
+        {FILTERS.map((f) => {
+          const isActive = activeFilter === f.key;
+          const filterColor = f.key === "paid" ? colors.success : f.key === "partial" ? colors.warning : f.key === "unpaid" ? colors.error : colors.accent;
+          return (
+            <TouchableOpacity
+              key={f.key}
+              style={[styles.filterPill, isActive && { backgroundColor: `${filterColor}18`, borderColor: filterColor }]}
+              onPress={() => setActiveFilter(f.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.filterPillText, isActive && { color: filterColor, fontWeight: "700" }]}>
+                {f.label}
+              </Text>
+              <View style={[styles.filterCount, isActive && { backgroundColor: filterColor }]}>
+                <Text style={[styles.filterCountText, isActive && { color: "#fff" }]}>
+                  {filterCounts[f.key]}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {loading ? (
         <View style={styles.centerContainer}>
@@ -141,7 +189,7 @@ export default function InvoicesScreen() {
         </View>
       ) : (
         <FlatList
-          data={invoices}
+          data={filteredInvoices}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
           refreshControl={
@@ -186,7 +234,24 @@ export default function InvoicesScreen() {
                       <Text style={styles.processingBadgeText}>Processing</Text>
                     </View>
                   ) : (
-                    <Text style={styles.cardAmount}>{formatCurrency(item.total, item.currency)}</Text>
+                    <View style={{ alignItems: "flex-end", gap: 4 }}>
+                      <Text style={styles.cardAmount}>{formatCurrency(item.total, item.currency)}</Text>
+                      <View style={[
+                        styles.paymentBadge,
+                        item.payment_status === "paid" && { backgroundColor: colors.successSubtle, borderColor: colors.success },
+                        item.payment_status === "partial" && { backgroundColor: "rgba(245,158,11,0.1)", borderColor: colors.warning },
+                        (!item.payment_status || item.payment_status === "unpaid") && { backgroundColor: colors.errorSubtle, borderColor: colors.error },
+                      ]}>
+                        <Text style={[
+                          styles.paymentBadgeText,
+                          item.payment_status === "paid" && { color: colors.success },
+                          item.payment_status === "partial" && { color: colors.warning },
+                          (!item.payment_status || item.payment_status === "unpaid") && { color: colors.error },
+                        ]}>
+                          {item.payment_status === "paid" ? "Paid" : item.payment_status === "partial" ? "Partial" : "Unpaid"}
+                        </Text>
+                      </View>
+                    </View>
                   )}
                 </View>
               </View>
@@ -197,12 +262,24 @@ export default function InvoicesScreen() {
               <View style={styles.emptyIconContainer}>
                 <FileText color={colors.accent} size={36} />
               </View>
-              <Text style={styles.emptyStateTitle}>No invoices yet</Text>
-              <Text style={styles.emptyStateSub}>Record a video or describe your project to generate your first quote.</Text>
-              <TouchableOpacity style={styles.ctaButton} onPress={() => router.push("/(tabs)/")}>
-                <Camera color="#fff" size={18} />
-                <Text style={styles.ctaButtonText}>Capture Your First Quote</Text>
-              </TouchableOpacity>
+              {activeFilter === "all" ? (
+                <>
+                  <Text style={styles.emptyStateTitle}>No invoices yet</Text>
+                  <Text style={styles.emptyStateSub}>Record a video or describe your project to generate your first quote.</Text>
+                  <TouchableOpacity style={styles.ctaButton} onPress={() => router.push("/(tabs)/")}>
+                    <Camera color="#fff" size={18} />
+                    <Text style={styles.ctaButtonText}>Capture Your First Quote</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.emptyStateTitle}>No {activeFilter} invoices</Text>
+                  <Text style={styles.emptyStateSub}>No invoices with "{activeFilter}" status found.</Text>
+                  <TouchableOpacity style={styles.ctaButton} onPress={() => setActiveFilter("all")}>
+                    <Text style={styles.ctaButtonText}>Show All</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           }
         />
@@ -266,4 +343,12 @@ const createStyles = (c: AppColors) => StyleSheet.create({
   ctaButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   errorText: { color: c.error, fontSize: 16, textAlign: "center", marginBottom: 16 },
+  paymentBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1 },
+  paymentBadgeText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.3 },
+  filterBarScroll: { flexGrow: 0 },
+  filterBar: { paddingHorizontal: 20, paddingBottom: 12, gap: 8, flexDirection: "row" },
+  filterPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.surface },
+  filterPillText: { fontSize: 13, fontWeight: "600", color: c.textSecondary },
+  filterCount: { minWidth: 18, height: 18, borderRadius: 9, backgroundColor: c.surfaceRaised, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  filterCountText: { fontSize: 10, fontWeight: "700", color: c.textSecondary },
 });
