@@ -389,7 +389,7 @@ export default function CameraCaptureScreen() {
       <View style={cameraStyles.header}>
         <View style={badgeStyle}>
           <Zap color="#4F46E5" size={16} fill="#4F46E5" />
-          <Text style={badgeTextStyle}>SnapQuote AI</Text>
+          <Text style={badgeTextStyle}>VideoInvoice</Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <TouchableOpacity ref={pricesBadgeRef} style={priceListChipStyle} onPress={() => setShowPriceListModal(true)} onLayout={() => measureElement(pricesBadgeRef, setPricesBadgeRect)}>

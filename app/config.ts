@@ -10,8 +10,8 @@ const getLocalhostUrl = () => {
     return 'https://ant-striking-presently.ngrok-free.app'; // iOS simulator or web
   }
   
-  // Production URL
-  return 'https://snapquote.up.railway.app'; 
+  // Production URL — update this once the Railway service is renamed to videoinvoice
+  return 'https://snapquote.up.railway.app';
 };
 
 const API_BASE_URL = getLocalhostUrl();
@@ -28,7 +28,7 @@ export const CONFIG = {
     }
   },
   app: {
-    name: 'SnapQuote AI',
+    name: 'VideoInvoice',
     version: '1.0.0',
   }
 };

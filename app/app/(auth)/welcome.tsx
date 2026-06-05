@@ -156,7 +156,7 @@ export default function WelcomeScreen() {
           <Animated.View entering={FadeInDown.springify().damping(14).delay(300)}>
             <View style={styles.badgeContainer}>
               <Sparkles color={colors.accentLight} size={13} style={{ marginRight: 6 }} />
-              <Text style={styles.badgeText}>Welcome to SnapQuote</Text>
+              <Text style={styles.badgeText}>Welcome to VideoInvoice</Text>
             </View>
           </Animated.View>
 

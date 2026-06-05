@@ -1,4 +1,4 @@
-name: SnapQuote
+name: VideoInvoice
 version: "3.8"
 
 services:
@@ -17,7 +17,7 @@ services:
       - rust_engine
       - pdf_engine
     networks:
-      - snapquote_network
+      - videoinvoice_network
 
   pdf_engine:
     build:
@@ -26,7 +26,7 @@ services:
     ports:
       - "5001:5000"
     networks:
-      - snapquote_network
+      - videoinvoice_network
     restart: unless-stopped
 
   rust_engine:
@@ -38,8 +38,8 @@ services:
     env_file:
       - ./rust_engine/.env
     networks:
-      - snapquote_network
+      - videoinvoice_network
 
 networks:
-  snapquote_network:
+  videoinvoice_network:
     driver: bridge

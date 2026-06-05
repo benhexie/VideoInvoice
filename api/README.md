@@ -1,6 +1,6 @@
-# SnapQuote AI Backend
+# VideoInvoice Backend
 
-This directory contains the core backend microservices for SnapQuote AI.
+This directory contains the core backend microservices for VideoInvoice.
 
 ## Architecture
 

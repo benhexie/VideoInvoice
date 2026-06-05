@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "SnapQuote",
-    "slug": "snapquote",
+    "name": "VideoInvoice",
+    "slug": "videoinvoice",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "snapquote",
+    "scheme": "videoinvoice",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.skrima.snapquote",
+      "bundleIdentifier": "com.videoinvoice.app",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -29,7 +29,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "googleServicesFile": "./google-services.json",
-      "package": "com.skrima.snapquote"
+      "package": "com.videoinvoice.app"
     },
     "web": {
       "bundler": "metro",

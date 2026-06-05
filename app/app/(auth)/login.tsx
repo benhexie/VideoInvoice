@@ -287,7 +287,7 @@ export default function LoginScreen() {
               <Text style={styles.logoText}>SQ</Text>
             </Animated.View>
             <Text style={styles.title}>Good to see{"\n"}you again</Text>
-            <Text style={styles.subtitle}>Sign in to continue to SnapQuote AI</Text>
+            <Text style={styles.subtitle}>Sign in to continue to VideoInvoice</Text>
           </Animated.View>
 
           <Animated.View

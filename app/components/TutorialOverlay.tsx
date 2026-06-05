@@ -41,7 +41,7 @@ type Step = {
 
 const STEPS: Step[] = [
   {
-    title: "Welcome to SnapQuote!",
+    title: "Welcome to VideoInvoice!",
     description:
       "Let me give you a quick tour so you can start generating quotes right away.",
     spotlightKey: "none",

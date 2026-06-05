@@ -1,8 +1,8 @@
-# SnapQuote AI Architecture & API Contracts
+# VideoInvoice Architecture & API Contracts
 
 ## 1. System Overview
 
-SnapQuote AI uses a Core & Edge microservice architecture consisting of:
+VideoInvoice uses a Core & Edge microservice architecture consisting of:
 1. **Firebase (BaaS):** Client Auth, Firestore (JSON invoices), Firebase Storage (media).
 2. **Node.js Main Server (Express/Fastify):** Primary API, handles Stripe payments, session validation, and orchestrates requests to the AI engine.
 3. **Rust AI Microservice (Axum):** Highly optimized internal engine that handles Google Gemini 1.5 Flash agent loops, tool execution for prompt-to-edit, and output generation.

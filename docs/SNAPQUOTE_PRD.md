@@ -1,11 +1,11 @@
-# Product Requirements Document (PRD): SnapQuote AI
+# Product Requirements Document (PRD): VideoInvoice
 
 ## 1. Executive Summary
 
-**Product Name:** SnapQuote AI  
+**Product Name:** VideoInvoice  
 **Tagline:** "Point, Talk, and Get Paid. The AI Estimator for Contractors."  
 **Target Audience:** General contractors, plumbers, electricians, landscapers, and independent tradespeople.  
-**Core Value Proposition:** Eliminate the hours spent typing up quotes at night. SnapQuote allows contractors to capture job requirements via video, audio, text, or client document uploads, automatically generating a professional, editable, and sendable invoice in seconds.
+**Core Value Proposition:** Eliminate the hours spent typing up quotes at night. VideoInvoice allows contractors to capture job requirements via video, audio, text, or client document uploads, automatically generating a professional, editable, and sendable invoice in seconds.
 
 ## 2. Core Features & Workflows
 

@@ -116,7 +116,7 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.nameText}>{userProfile?.name || user?.displayName || "SnapQuote User"}</Text>
+        <Text style={styles.nameText}>{userProfile?.name || user?.displayName || "VideoInvoice User"}</Text>
         <Text style={styles.emailText}>{user?.email || "No Email Found"}</Text>
         {isPro ? (
           <LinearGradient

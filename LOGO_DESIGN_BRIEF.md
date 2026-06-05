@@ -1,8 +1,8 @@
-# SnapQuote — Logo Design Brief
+# VideoInvoice — Logo Design Brief
 
 ## App Overview
 
-**SnapQuote** is an AI-powered quoting and invoicing app for iOS and Android. The core experience is dead simple: a contractor, tradesperson, or freelancer records a short video (or types a description) of a job, and the AI instantly generates a professional, itemized quote. The app also supports uploading price lists and exporting polished PDF invoices.
+**VideoInvoice** is an AI-powered quoting and invoicing app for iOS and Android. The core experience is dead simple: a contractor, tradesperson, or freelancer records a short video (or types a description) of a job, and the AI instantly generates a professional, itemized quote. The app also supports uploading price lists and exporting polished PDF invoices.
 
 **Target users:** Contractors, builders, plumbers, electricians, landscapers, freelancers — anyone who needs to turn a site walkthrough or a quick description into a professional quote in under a minute.
 
@@ -42,14 +42,14 @@ The logo must look great on **both** `#09090B` (dark) and `#FAFAFA` (light) back
 
 ### Typography Direction
 
-- The wordmark **"SnapQuote"** should feel **modern and geometric** — think rounded sans-serif (similar to Inter, Satoshi, or Geist).
+- The wordmark **"VideoInvoice"** should feel **modern and geometric** — think rounded sans-serif (similar to Inter, Satoshi, or Geist).
 - Weight: **Bold** for "Snap", slightly lighter or same for "Quote" — or treat it as a single bold wordmark with a color split between the two words.
 - No scripts, no serifs, no vintage styles.
 - Optional: "AI" or a small "ai" badge can be incorporated subtly if it doesn't clutter the mark.
 
 ### Icon / Symbol Concept
 
-The in-app identity already uses a **lightning bolt (Zap)** icon in `#4F46E5` as the "SnapQuote AI" badge. The logo mark should build on or complement this direction.
+The in-app identity already uses a **lightning bolt (Zap)** icon in `#4F46E5` as the "VideoInvoice AI" badge. The logo mark should build on or complement this direction.
 
 **Core ideas to explore:**
 
@@ -99,18 +99,18 @@ The app icon is the most important deliverable. It will be cropped to a **rounde
 ## File Naming Convention
 
 ```
-snapquote-logo-primary-dark.svg
-snapquote-logo-primary-light.svg
-snapquote-icon-dark.svg
-snapquote-icon-dark-1024.png
-snapquote-wordmark.svg
-snapquote-mono.svg
+videoinvoice-logo-primary-dark.svg
+videoinvoice-logo-primary-light.svg
+videoinvoice-icon-dark.svg
+videoinvoice-icon-dark-1024.png
+videoinvoice-wordmark.svg
+videoinvoice-mono.svg
 ```
 
 ---
 
 ## Questions for the Designer
 
-1. Do you want to incorporate "AI" into the wordmark (e.g. "SnapQuote **AI**") or keep it clean as "SnapQuote"?
+1. Do you want to incorporate "AI" into the wordmark (e.g. "VideoInvoice **AI**") or keep it clean as "VideoInvoice"?
 2. Should the icon lean into the **video/camera** metaphor (the primary input method) or the **invoice/document** metaphor (the output)?
 3. Preference on icon background: solid indigo `#4F46E5` or near-black `#09090B`?

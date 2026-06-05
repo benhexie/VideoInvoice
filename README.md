@@ -1,4 +1,4 @@
-# SnapQuote
+# VideoInvoice
 
 AI-powered invoicing for field contractors. Point your camera at a job site, describe the work, and get a professional itemized quote in seconds.
 
@@ -141,7 +141,7 @@ SnapQuote/
 │   └── docker-compose.yml
 │
 └── docs/
-    └── SNAPQUOTE_PRD.md
+    └── VIDEOINVOICE_PRD.md
 ```
 
 ---

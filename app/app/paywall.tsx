@@ -118,7 +118,7 @@ export default function PaywallScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>Upgrade to Pro</Text>
-        <Text style={styles.subtitle}>Unlock the full power of SnapQuote</Text>
+        <Text style={styles.subtitle}>Unlock the full power of VideoInvoice</Text>
 
         {/* Feature comparison */}
         <View style={styles.featuresCard}>

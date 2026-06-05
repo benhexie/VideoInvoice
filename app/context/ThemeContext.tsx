@@ -3,7 +3,7 @@ import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors, { AppColors } from "@/constants/Colors";
 
-const STORAGE_KEY = "@snapquote_theme_preference";
+const STORAGE_KEY = "@videoinvoice_theme_preference";
 
 export type ThemePreference = "system" | "light" | "dark";
 
