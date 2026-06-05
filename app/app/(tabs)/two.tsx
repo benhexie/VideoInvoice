@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FileText, Trash2 } from "lucide-react-native";
+import { Camera, FileText, Trash2 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { db, storage } from "../../firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
@@ -199,6 +199,10 @@ export default function InvoicesScreen() {
               </View>
               <Text style={styles.emptyStateTitle}>No invoices yet</Text>
               <Text style={styles.emptyStateSub}>Record a video or describe your project to generate your first quote.</Text>
+              <TouchableOpacity style={styles.ctaButton} onPress={() => router.push("/(tabs)/")}>
+                <Camera color="#fff" size={18} />
+                <Text style={styles.ctaButtonText}>Capture Your First Quote</Text>
+              </TouchableOpacity>
             </View>
           }
         />
@@ -253,7 +257,13 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     marginBottom: 20, borderWidth: 1, borderColor: c.accentBorder,
   },
   emptyStateTitle: { fontSize: 20, fontWeight: "600", color: c.textPrimary, marginBottom: 8 },
-  emptyStateSub: { fontSize: 14, color: c.textTertiary, textAlign: "center", lineHeight: 20 },
+  emptyStateSub: { fontSize: 14, color: c.textTertiary, textAlign: "center", lineHeight: 20, marginBottom: 28 },
+  ctaButton: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: c.accent, borderRadius: 14,
+    paddingHorizontal: 24, paddingVertical: 14,
+  },
+  ctaButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   errorText: { color: c.error, fontSize: 16, textAlign: "center", marginBottom: 16 },
 });

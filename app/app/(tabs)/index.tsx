@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -48,6 +48,7 @@ import { useCallback } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
 import { useSubscription } from "../../context/SubscriptionContext";
+import TutorialOverlay, { LayoutRect } from "../../components/TutorialOverlay";
 
 // Camera overlay UI is always dark — it renders on top of a live camera feed
 const CAMERA_COLORS = {
@@ -82,7 +83,15 @@ export default function CameraCaptureScreen() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
-  const { user } = useAuth();
+  const currencyBadgeRef = useRef<any>(null);
+  const pricesBadgeRef = useRef<any>(null);
+  const modeToggleRef = useRef<any>(null);
+  const recordBtnRef = useRef<any>(null);
+  const [currencyBadgeRect, setCurrencyBadgeRect] = useState<LayoutRect | undefined>();
+  const [pricesBadgeRect, setPricesBadgeRect] = useState<LayoutRect | undefined>();
+  const [modeToggleRect, setModeToggleRect] = useState<LayoutRect | undefined>();
+  const [recordButtonRect, setRecordButtonRect] = useState<LayoutRect | undefined>();
+  const { user, userProfile } = useAuth();
   const { isPro } = useSubscription();
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -167,6 +176,21 @@ export default function CameraCaptureScreen() {
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isRecording]);
+
+  function measureElement(ref: React.RefObject<any>, setRect: (r: LayoutRect) => void) {
+    ref.current?.measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
+      setRect({ x: pageX, y: pageY, width, height });
+    });
+  }
+
+  const handleTutorialComplete = async () => {
+    if (!user) return;
+    try {
+      await db().collection("users").doc(user.uid).set({ hasSeenTutorial: true }, { merge: true });
+    } catch (e) {
+      console.error("Failed to mark tutorial complete:", e);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -365,13 +389,13 @@ export default function CameraCaptureScreen() {
           <Text style={badgeTextStyle}>SnapQuote AI</Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <TouchableOpacity style={priceListChipStyle} onPress={() => setShowPriceListModal(true)}>
+          <TouchableOpacity ref={pricesBadgeRef} style={priceListChipStyle} onPress={() => setShowPriceListModal(true)} onLayout={() => measureElement(pricesBadgeRef, setPricesBadgeRect)}>
             <FileText color={priceListUrl ? colors.success : colors.textSecondary} size={14} />
             <Text style={[chipTextStyle, { color: priceListUrl ? colors.success : isTextMode ? colors.textSecondary : "#A1A1AA" }]}>
               {priceListUrl ? "Prices ✓" : "Prices"}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={chipStyle} onPress={() => { setCurrencySearchQuery(""); setCurrencySearchResults(searchCurrency("")); setShowCurrencyModal(true); }}>
+          <TouchableOpacity ref={currencyBadgeRef} style={chipStyle} onPress={() => { setCurrencySearchQuery(""); setCurrencySearchResults(searchCurrency("")); setShowCurrencyModal(true); }} onLayout={() => measureElement(currencyBadgeRef, setCurrencyBadgeRect)}>
             <DollarSign color={isTextMode ? colors.accent : "#4F46E5"} size={16} />
             <Text style={chipTextStyle}>{currency}</Text>
           </TouchableOpacity>
@@ -440,7 +464,7 @@ export default function CameraCaptureScreen() {
                 )}
                 {!isRecording && <Text style={cameraStyles.instructionText}>Record the space to generate a quote</Text>}
                 <View style={cameraStyles.controls}>
-                  <TouchableOpacity style={cameraStyles.recordOuter} onPress={handleRecord} activeOpacity={0.8}>
+                  <TouchableOpacity ref={recordBtnRef} style={cameraStyles.recordOuter} onPress={handleRecord} activeOpacity={0.8} onLayout={() => measureElement(recordBtnRef, setRecordButtonRect)}>
                     <View style={[cameraStyles.recordInner, isRecording && cameraStyles.recordingInner]} />
                   </TouchableOpacity>
                 </View>
@@ -510,7 +534,7 @@ export default function CameraCaptureScreen() {
       {/* Mode selector — positioned above camera, intentionally dark pill */}
       {!isRecording && !recordedVideoUri && (
         <View style={cameraStyles.modeSelectorWrapper}>
-          <View style={cameraStyles.modeSelector}>
+          <View ref={modeToggleRef} style={cameraStyles.modeSelector} onLayout={() => measureElement(modeToggleRef, setModeToggleRect)}>
             {(["video", "text"] as const).map((mode) => (
               <TouchableOpacity
                 key={mode}
@@ -576,6 +600,16 @@ export default function CameraCaptureScreen() {
           </RNAnimated.View>
         </View>
       </Modal>
+
+      {/* First-time onboarding tutorial */}
+      <TutorialOverlay
+        visible={!!(userProfile?.hasCompletedOnboarding && !userProfile?.hasSeenTutorial)}
+        onComplete={handleTutorialComplete}
+        currencyBadgeRect={currencyBadgeRect}
+        pricesBadgeRect={pricesBadgeRect}
+        modeToggleRect={modeToggleRect}
+        recordButtonRect={recordButtonRect}
+      />
 
       {/* Currency Modal */}
       <Modal visible={showCurrencyModal} transparent animationType="slide" onRequestClose={() => setShowCurrencyModal(false)}>

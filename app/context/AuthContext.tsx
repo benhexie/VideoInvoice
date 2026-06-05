@@ -4,6 +4,7 @@ import { auth, db } from "../firebaseConfig";
 
 export type UserProfile = {
   hasCompletedOnboarding?: boolean;
+  hasSeenTutorial?: boolean;
   name?: string;
   photoURL?: string;
 };

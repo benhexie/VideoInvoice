@@ -16,14 +16,11 @@ const validateAuth = async (req, res, next) => {
 
   try {
     let decodedToken;
-    try {
-      if (admin.apps.length > 0 && admin.app().options.credential) {
-        decodedToken = await admin.auth().verifyIdToken(idToken);
-      } else {
-        throw new Error("Firebase Admin not fully initialized for token verification.");
-      }
-    } catch (e) {
-      // Fallback for development if real token verification fails or admin not set up
+    const firebaseReady = admin.apps.length > 0 && admin.app().options.credential;
+    if (firebaseReady) {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } else {
+      // Dev-only fallback when Firebase Admin is not configured
       const uid = idToken.startsWith("mock_") ? idToken : (req.body.userId || "mock_user_123");
       decodedToken = { uid: uid, email: "contractor@example.com" };
     }
