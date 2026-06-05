@@ -3,5 +3,3 @@ claw-code-main/
 .env
 .env.local
 .DS_Store
-app/GoogleService-Info.plist
-app/google-services.json
