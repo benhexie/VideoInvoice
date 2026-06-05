@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, ArrowRight, RefreshCw } from "lucide-react-native";
 import { auth } from "../../firebaseConfig";
-import { signOut, sendEmailVerification } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import Animated, {
@@ -112,11 +111,11 @@ export default function VerifyScreen() {
     setError("");
     setMessage("");
     try {
-      await auth.currentUser?.reload();
-      if (auth.currentUser?.emailVerified) {
+      await auth().currentUser?.reload();
+      if (auth().currentUser?.emailVerified) {
         router.replace("/(tabs)");
       } else {
-        await signOut(auth);
+        await auth().signOut();
         router.replace({
           pathname: "/(auth)/login",
           params: { error: "Please verify your email before continuing." },
@@ -130,12 +129,12 @@ export default function VerifyScreen() {
   };
 
   const handleResend = async () => {
-    if (!auth.currentUser) return;
+    if (!auth().currentUser) return;
     setResendLoading(true);
     setError("");
     setMessage("");
     try {
-      await sendEmailVerification(auth.currentUser);
+      await auth().currentUser?.sendEmailVerification();
       setMessage("Verification email resent! Check your inbox and spam folder.");
     } catch (e: any) {
       if (e.code === "auth/too-many-requests") {

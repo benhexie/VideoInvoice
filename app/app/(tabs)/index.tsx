@@ -14,6 +14,7 @@ import {
   ScrollView,
   PanResponder,
   Animated as RNAnimated,
+  Alert,
 } from "react-native";
 import {
   CameraView,
@@ -21,9 +22,7 @@ import {
   useMicrophonePermissions,
 } from "expo-camera";
 import { Video, ResizeMode } from "expo-av";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage, db } from "../../firebaseConfig";
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { CONFIG } from "../../config";
@@ -48,6 +47,7 @@ import { searchCurrency, Currency } from "../../utils/currency";
 import { useCallback } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
+import { useSubscription } from "../../context/SubscriptionContext";
 
 // Camera overlay UI is always dark — it renders on top of a live camera feed
 const CAMERA_COLORS = {
@@ -83,6 +83,7 @@ export default function CameraCaptureScreen() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
   const { user } = useAuth();
+  const { isPro } = useSubscription();
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const router = useRouter();
@@ -110,9 +111,10 @@ export default function CameraCaptureScreen() {
       const fetchCurrency = async () => {
         if (!user) return;
         try {
-          const settingsDoc = await getDoc(doc(db, "users", user.uid, "settings", "invoice"));
-          if (settingsDoc.exists()) {
+          const settingsDoc = await db().collection("users").doc(user.uid).collection("settings").doc("invoice").get();
+          if (settingsDoc.exists) {
             const data = settingsDoc.data();
+            if (!data) return;
             if (data.currency) setCurrency(data.currency);
             setPriceListUrl(data.price_list_url || null);
             setPriceListName(data.price_list_name || "");
@@ -173,21 +175,35 @@ export default function CameraCaptureScreen() {
   };
 
   const processVideo = async (uri: string) => {
+    if (!isPro) {
+      const snap = await db().collection("invoices").where("user_id", "==", user?.uid).count().get();
+      if (snap.data().count >= 5) {
+        Alert.alert(
+          "Invoice Limit Reached",
+          "Free accounts are limited to 5 invoices. Upgrade to Pro for unlimited.",
+          [
+            { text: "Not Now", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/paywall") },
+          ]
+        );
+        return;
+      }
+    }
     alert("Video is uploading and processing in the background. Check the Invoices tab for updates.");
     router.push("/(tabs)/two");
-    const invoiceDocRef = doc(collection(db, "invoices"));
+    const invoiceDocRef = db().collection("invoices").doc();
     const invoiceId = invoiceDocRef.id;
     try {
-      await setDoc(invoiceDocRef, { user_id: user?.uid, project_name: "New Project", date: new Date().toISOString().split("T")[0], status: "processing", created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
+      await invoiceDocRef.set({ user_id: user?.uid, project_name: "New Project", date: new Date().toISOString().split("T")[0], status: "processing", created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
     } catch (e: any) { console.error("Failed to write invoice stub:", e.message); }
     try {
       const blob = await (await fetch(uri)).blob();
-      const storageRef = ref(storage, `quotes/${user?.uid}/${Date.now()}.mov`);
-      const uploadTask = await uploadBytesResumable(storageRef, blob);
-      const downloadURL = await getDownloadURL(uploadTask.ref);
+      const storageRef = storage().ref(`quotes/${user?.uid}/${Date.now()}.mov`);
+      await storageRef.put(blob);
+      const downloadURL = await storageRef.getDownloadURL();
       // Patch the stub now that we have the Storage URL, so deletion during
       // the processing window still cleans up the file.
-      await setDoc(invoiceDocRef, { media_url: downloadURL }, { merge: true });
+      await invoiceDocRef.set({ media_url: downloadURL }, { merge: true });
       const token = await user?.getIdToken();
       await fetch(CONFIG.api.endpoints.generateQuote, {
         method: "POST",
@@ -209,6 +225,20 @@ export default function CameraCaptureScreen() {
 
   const handleSendText = async () => {
     if (!textInput.trim() && !selectedDoc) return;
+    if (!isPro) {
+      const snap = await db().collection("invoices").where("user_id", "==", user?.uid).count().get();
+      if (snap.data().count >= 5) {
+        Alert.alert(
+          "Invoice Limit Reached",
+          "Free accounts are limited to 5 invoices. Upgrade to Pro for unlimited.",
+          [
+            { text: "Not Now", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/paywall") },
+          ]
+        );
+        return;
+      }
+    }
     alert("Your request is processing in the background. Check the Invoices tab for updates.");
     router.push("/(tabs)/two");
     const currentText = textInput;
@@ -216,17 +246,17 @@ export default function CameraCaptureScreen() {
     setTextInput("");
     setSelectedDoc(null);
     Keyboard.dismiss();
-    const invoiceDocRef = doc(collection(db, "invoices"));
+    const invoiceDocRef = db().collection("invoices").doc();
     const invoiceId = invoiceDocRef.id;
     try {
-      await setDoc(invoiceDocRef, { user_id: user?.uid, project_name: currentDoc?.name?.split(".")[0] || "New Project", date: new Date().toISOString().split("T")[0], status: "processing", created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
+      await invoiceDocRef.set({ user_id: user?.uid, project_name: currentDoc?.name?.split(".")[0] || "New Project", date: new Date().toISOString().split("T")[0], status: "processing", created_at: Date.now(), currency, line_items: [], subtotal: 0, taxes: 0, total: 0 });
     } catch (e: any) { console.error("Failed to write invoice stub:", e.message); }
     try {
       let documentURL = null;
       if (currentDoc) {
         const blob = await (await fetch(currentDoc.uri)).blob();
         const extension = currentDoc.name.split(".").pop() || "pdf";
-        const storageRef = ref(storage, `quotes/${user?.uid}/${Date.now()}.${extension}`);
+        const storageRef = storage().ref(`quotes/${user?.uid}/${Date.now()}.${extension}`);
         let mimeType = currentDoc.mimeType;
         if (!mimeType) {
           if (extension === "pdf") mimeType = "application/pdf";
@@ -235,11 +265,11 @@ export default function CameraCaptureScreen() {
           else if (extension === "docx") mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
           else mimeType = "image/jpeg";
         }
-        const uploadTask = await uploadBytesResumable(storageRef, blob, { contentType: mimeType });
-        documentURL = await getDownloadURL(uploadTask.ref);
+        await storageRef.put(blob, { contentType: mimeType });
+        documentURL = await storageRef.getDownloadURL();
         // Patch the stub now that we have the Storage URL, so deletion during
         // the processing window still cleans up the file.
-        await setDoc(invoiceDocRef, { media_url: documentURL }, { merge: true });
+        await invoiceDocRef.set({ media_url: documentURL }, { merge: true });
       }
       const token = await user?.getIdToken();
       const payload: any = { invoice_id: invoiceId, prompt: currentText || "Analyze the attached document to generate a quote.", currency };
@@ -266,10 +296,10 @@ export default function CameraCaptureScreen() {
       const ext = asset.name.split(".").pop()?.toLowerCase() || "pdf";
       const mimeMap: Record<string, string> = { pdf: "application/pdf", csv: "text/csv", txt: "text/plain", xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg" };
       const safeFilename = asset.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const storageRef = ref(storage, `price_lists/${user?.uid}/${Date.now()}_${safeFilename}`);
-      const uploadTask = await uploadBytesResumable(storageRef, blob, { contentType: mimeMap[ext] || "application/octet-stream" });
-      const downloadURL = await getDownloadURL(uploadTask.ref);
-      await setDoc(doc(db, "users", user!.uid, "settings", "invoice"), { price_list_url: downloadURL, price_list_name: asset.name }, { merge: true });
+      const storageRef = storage().ref(`price_lists/${user?.uid}/${Date.now()}_${safeFilename}`);
+      await storageRef.put(blob, { contentType: mimeMap[ext] || "application/octet-stream" });
+      const downloadURL = await storageRef.getDownloadURL();
+      await db().collection("users").doc(user!.uid).collection("settings").doc("invoice").set({ price_list_url: downloadURL, price_list_name: asset.name }, { merge: true });
       setPriceListUrl(downloadURL);
       setPriceListName(asset.name);
       setShowPriceListModal(false);
@@ -280,7 +310,7 @@ export default function CameraCaptureScreen() {
 
   const handleRemovePriceList = async () => {
     try {
-      await setDoc(doc(db, "users", user!.uid, "settings", "invoice"), { price_list_url: "", price_list_name: "" }, { merge: true });
+      await db().collection("users").doc(user!.uid).collection("settings").doc("invoice").set({ price_list_url: "", price_list_name: "" }, { merge: true });
       setPriceListUrl(null);
       setPriceListName("");
       setShowPriceListModal(false);

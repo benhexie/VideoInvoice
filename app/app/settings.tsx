@@ -18,8 +18,6 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebaseConfig";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as DocumentPicker from "expo-document-picker";
@@ -38,12 +36,14 @@ import {
   X,
   Eye,
   FileText,
+  Lock,
 } from "lucide-react-native";
 import { WebView } from "react-native-webview";
 import { CONFIG } from "../config";
 import { searchCurrency, Currency } from "../utils/currency";
 import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
+import { useSubscription } from "../context/SubscriptionContext";
 
 const TEMPLATES = [
   { id: "premium", name: "Premium", color: "#7C3AED", isPremium: true },
@@ -302,6 +302,7 @@ const tpStyles = StyleSheet.create({
 export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { isPro } = useSubscription();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(colors);
@@ -380,9 +381,9 @@ export default function SettingsScreen() {
     async function loadSettings() {
       if (!user) return;
       try {
-        const customizationRef = doc(db, "users", user.uid, "settings", "invoice");
-        const docSnap = await getDoc(customizationRef);
-        if (docSnap.exists()) {
+        const customizationRef = db().collection("users").doc(user.uid).collection("settings").doc("invoice");
+        const docSnap = await customizationRef.get();
+        if (docSnap.exists) {
           const data = docSnap.data();
           const loadedState = {
             template: data.template || TEMPLATES[0].id,
@@ -472,9 +473,9 @@ export default function SettingsScreen() {
       png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
     };
     const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const fileRef = ref(storage, `${pathPrefix}/${user!.uid}/${Date.now()}_${safeFilename}`);
-    await uploadBytes(fileRef, blob, { contentType: mimeMap[ext] || "application/octet-stream" });
-    return await getDownloadURL(fileRef);
+    const fileRef = storage().ref(`${pathPrefix}/${user!.uid}/${Date.now()}_${safeFilename}`);
+    await fileRef.put(blob, { contentType: mimeMap[ext] || "application/octet-stream" });
+    return await fileRef.getDownloadURL();
   };
 
   const handleSignatureOK = (signature: string) => {
@@ -494,9 +495,9 @@ export default function SettingsScreen() {
     });
     const isDataUri = uri.startsWith("data:");
     const filename = isDataUri ? "drawn.png" : uri.split("/").pop() || "upload.jpg";
-    const fileRef = ref(storage, `${pathPrefix}/${user!.uid}/${Date.now()}_${filename}`);
-    await uploadBytes(fileRef, blob);
-    return await getDownloadURL(fileRef);
+    const fileRef = storage().ref(`${pathPrefix}/${user!.uid}/${Date.now()}_${filename}`);
+    await fileRef.put(blob);
+    return await fileRef.getDownloadURL();
   };
 
   const handleSave = async () => {
@@ -510,14 +511,14 @@ export default function SettingsScreen() {
 
       const deleteOldImage = async (oldUrl: string, newUrl: string) => {
         if (oldUrl && oldUrl !== newUrl && oldUrl.includes("firebasestorage")) {
-          try { await deleteObject(ref(storage, oldUrl)); } catch {}
+          try { await storage().refFromURL(oldUrl).delete(); } catch {}
         }
       };
       await deleteOldImage(initialState.companyLogo, finalLogoUrl);
       await deleteOldImage(initialState.signatureUrl, finalSignatureUrl);
 
-      const customizationRef = doc(db, "users", user.uid, "settings", "invoice");
-      await setDoc(customizationRef, {
+      const customizationRef = db().collection("users").doc(user.uid).collection("settings").doc("invoice");
+      await customizationRef.set({
         template: selectedTemplate, companyName, address, phone, email,
         company_logo: finalLogoUrl, signature_url: finalSignatureUrl,
         currency, theme_color: themeColor,
@@ -589,7 +590,13 @@ export default function SettingsScreen() {
                   <TouchableOpacity
                     key={tmpl.id}
                     style={[styles.templateCard, isSelected && { borderColor: tmpl.color, backgroundColor: `${tmpl.color}15` }]}
-                    onPress={() => setSelectedTemplate(tmpl.id)}
+                    onPress={() => {
+                      if ((tmpl as any).isPremium && !isPro) {
+                        router.push("/paywall");
+                        return;
+                      }
+                      setSelectedTemplate(tmpl.id);
+                    }}
                   >
                     <View style={[styles.templatePreviewBox, isSelected && { borderColor: tmpl.color, borderWidth: 2 }]}>
                       <TemplatePreview type={tmpl.id} color={tmpl.color} />
@@ -597,6 +604,11 @@ export default function SettingsScreen() {
                         <View style={styles.premiumBadge}>
                           <Crown color="#fff" size={10} />
                           <Text style={styles.premiumText}>PRO</Text>
+                        </View>
+                      )}
+                      {(tmpl as any).isPremium && !isPro && (
+                        <View style={styles.lockOverlay}>
+                          <Lock color="#fff" size={20} />
                         </View>
                       )}
                       <TouchableOpacity style={styles.templateEyeBtn} onPress={() => openTemplatePreview(tmpl.id)}>
@@ -899,10 +911,23 @@ export default function SettingsScreen() {
               {TEMPLATES.find((t) => t.id === previewTemplateId)?.name} Template
             </Text>
             <TouchableOpacity
-              onPress={() => { if (previewTemplateId) setSelectedTemplate(previewTemplateId); setPreviewTemplateId(null); setPreviewHtml(null); }}
+              onPress={() => {
+                const tmpl = TEMPLATES.find((t) => t.id === previewTemplateId);
+                if (tmpl?.isPremium && !isPro) {
+                  setPreviewTemplateId(null);
+                  setPreviewHtml(null);
+                  router.push("/paywall");
+                  return;
+                }
+                if (previewTemplateId) setSelectedTemplate(previewTemplateId);
+                setPreviewTemplateId(null);
+                setPreviewHtml(null);
+              }}
               style={[styles.templatePreviewModalSelect, { backgroundColor: TEMPLATES.find((t) => t.id === previewTemplateId)?.color || colors.accent }]}
             >
-              <Text style={styles.templatePreviewModalSelectText}>Select</Text>
+              <Text style={styles.templatePreviewModalSelectText}>
+                {TEMPLATES.find((t) => t.id === previewTemplateId)?.isPremium && !isPro ? "Upgrade to Pro" : "Select"}
+              </Text>
             </TouchableOpacity>
           </View>
           <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -953,6 +978,10 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: "row", alignItems: "center", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4, gap: 2,
   },
   premiumText: { color: "#fff", fontSize: 8, fontWeight: "bold" },
+  lockOverlay: {
+    ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center", alignItems: "center", borderRadius: 8,
+  },
   inputGroup: {
     flexDirection: "row", alignItems: "center", backgroundColor: c.surface,
     borderRadius: 16, borderWidth: 1, borderColor: c.border, marginBottom: 12, height: 56,

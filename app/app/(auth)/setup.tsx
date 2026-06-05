@@ -14,12 +14,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
-import { doc, setDoc } from "firebase/firestore";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
 import { db, storage } from "../../firebaseConfig";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as DocumentPicker from "expo-document-picker";
@@ -30,12 +24,15 @@ import {
   MapPin,
   Phone,
   Mail,
+  User,
   Image as ImageIcon,
   Crown,
   PenTool,
+  Lock,
 } from "lucide-react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
+import { useSubscription } from "../../context/SubscriptionContext";
 
 const TEMPLATES = [
   { id: "premium", name: "Premium", color: "#7C3AED", isPremium: true },
@@ -165,12 +162,15 @@ const tpStyles = StyleSheet.create({
 });
 
 export default function SetupScreen() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const { isPro } = useSubscription();
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0].id);
+  const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[3].id); // default: "modern"
+  const [name, setName] = useState(userProfile?.name || user?.displayName || "");
   const [companyName, setCompanyName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -220,9 +220,9 @@ export default function SetupScreen() {
     });
     const isDataUri = uri.startsWith("data:");
     const filename = isDataUri ? "drawn.png" : uri.split("/").pop() || "upload.jpg";
-    const fileRef = ref(storage, `${pathPrefix}/${user!.uid}/${Date.now()}_${filename}`);
-    await uploadBytes(fileRef, blob);
-    return await getDownloadURL(fileRef);
+    const fileRef = storage().ref(`${pathPrefix}/${user!.uid}/${Date.now()}_${filename}`);
+    await fileRef.put(blob);
+    return await fileRef.getDownloadURL();
   };
 
   const handleSave = async () => {
@@ -232,10 +232,19 @@ export default function SetupScreen() {
     try {
       const finalLogoUrl = await uploadImageToStorage(companyLogo, "logos");
       const finalSignatureUrl = await uploadImageToStorage(signatureUrl, "signatures");
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, { hasCompletedOnboarding: true, updatedAt: new Date().toISOString() }, { merge: true });
-      const customizationRef = doc(db, "users", user.uid, "settings", "invoice");
-      await setDoc(customizationRef, {
+      const trimmedName = name.trim();
+      const userRef = db().collection("users").doc(user.uid);
+      await userRef.set({
+        hasCompletedOnboarding: true,
+        ...(trimmedName ? { name: trimmedName } : {}),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      // Keep Firebase Auth displayName in sync for social sign-in users
+      if (trimmedName && !user.displayName) {
+        await user.updateProfile({ displayName: trimmedName });
+      }
+      const customizationRef = db().collection("users").doc(user.uid).collection("settings").doc("invoice");
+      await customizationRef.set({
         template: selectedTemplate, companyName, address, phone, email,
         company_logo: finalLogoUrl, signature_url: finalSignatureUrl,
         updatedAt: new Date().toISOString(),
@@ -268,7 +277,13 @@ export default function SetupScreen() {
                   <TouchableOpacity
                     key={tmpl.id}
                     style={[styles.templateCard, isSelected && { borderColor: tmpl.color, backgroundColor: `${tmpl.color}15` }]}
-                    onPress={() => setSelectedTemplate(tmpl.id)}
+                    onPress={() => {
+                      if ((tmpl as any).isPremium && !isPro) {
+                        router.push("/paywall");
+                        return;
+                      }
+                      setSelectedTemplate(tmpl.id);
+                    }}
                   >
                     <View style={[styles.templatePreviewBox, isSelected && { borderColor: tmpl.color, borderWidth: 2 }]}>
                       <TemplatePreview type={tmpl.id} color={tmpl.color} />
@@ -276,6 +291,11 @@ export default function SetupScreen() {
                         <View style={styles.premiumBadge}>
                           <Crown color="#fff" size={10} />
                           <Text style={styles.premiumText}>PRO</Text>
+                        </View>
+                      )}
+                      {(tmpl as any).isPremium && !isPro && (
+                        <View style={styles.lockOverlay}>
+                          <Lock color="#fff" size={20} />
                         </View>
                       )}
                     </View>
@@ -294,13 +314,14 @@ export default function SetupScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.section}>
-            <Text style={styles.sectionTitle}>2. Business Details</Text>
+            <Text style={styles.sectionTitle}>2. Your Details</Text>
 
             {[
-              { icon: <Building2 color={colors.textSecondary} size={20} />, placeholder: "Company Name", value: companyName, onChange: setCompanyName, keyboard: undefined },
-              { icon: <MapPin color={colors.textSecondary} size={20} />, placeholder: "Business Address", value: address, onChange: setAddress, keyboard: undefined },
-              { icon: <Phone color={colors.textSecondary} size={20} />, placeholder: "Phone Number", value: phone, onChange: setPhone, keyboard: "phone-pad" as any },
-              { icon: <Mail color={colors.textSecondary} size={20} />, placeholder: "Business Email", value: email, onChange: setEmail, keyboard: "email-address" as any },
+              { icon: <User color={colors.textSecondary} size={20} />, placeholder: "Your Full Name", value: name, onChange: setName, keyboard: undefined, capitalize: "words" as any },
+              { icon: <Building2 color={colors.textSecondary} size={20} />, placeholder: "Company Name", value: companyName, onChange: setCompanyName, keyboard: undefined, capitalize: "none" as any },
+              { icon: <MapPin color={colors.textSecondary} size={20} />, placeholder: "Business Address", value: address, onChange: setAddress, keyboard: undefined, capitalize: "none" as any },
+              { icon: <Phone color={colors.textSecondary} size={20} />, placeholder: "Phone Number", value: phone, onChange: setPhone, keyboard: "phone-pad" as any, capitalize: "none" as any },
+              { icon: <Mail color={colors.textSecondary} size={20} />, placeholder: "Business Email", value: email, onChange: setEmail, keyboard: "email-address" as any, capitalize: "none" as any },
             ].map((field, i) => (
               <View key={i} style={styles.inputGroup}>
                 <View style={styles.inputIcon}>{field.icon}</View>
@@ -311,7 +332,7 @@ export default function SetupScreen() {
                   value={field.value}
                   onChangeText={field.onChange}
                   keyboardType={field.keyboard}
-                  autoCapitalize="none"
+                  autoCapitalize={field.capitalize}
                 />
               </View>
             ))}
@@ -463,6 +484,10 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: "row", alignItems: "center", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4, gap: 2,
   },
   premiumText: { color: "#fff", fontSize: 8, fontWeight: "bold" },
+  lockOverlay: {
+    ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center", alignItems: "center", borderRadius: 8,
+  },
   inputGroup: {
     flexDirection: "row", alignItems: "center", backgroundColor: c.surface,
     borderRadius: 16, borderWidth: 1, borderColor: c.border, marginBottom: 12, height: 56,

@@ -1,0 +1,6 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "node src/app.js"
+restartPolicyType = "on_failure"

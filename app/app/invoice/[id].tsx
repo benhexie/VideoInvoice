@@ -19,8 +19,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, deleteObject } from "firebase/storage";
 import { db, storage } from "../../firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
 import * as FileSystem from "expo-file-system/legacy";
@@ -41,6 +39,7 @@ import {
   DollarSign,
   Search,
   Plus,
+  Lock,
 } from "lucide-react-native";
 import { CONFIG } from "../../config";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -48,6 +47,7 @@ import { getCurrencySymbol, searchCurrency, Currency, formatAmount } from "../..
 import { Video, ResizeMode } from "expo-av";
 import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
+import { useSubscription } from "../../context/SubscriptionContext";
 
 const INVOICE_TEMPLATES = [
   { id: "premium", name: "Premium", color: "#7C3AED", isPremium: true },
@@ -235,6 +235,7 @@ export default function InvoiceReviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { isPro } = useSubscription();
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
@@ -284,11 +285,11 @@ export default function InvoiceReviewScreen() {
 
   useEffect(() => {
     if (!user || !id) return;
-    const unsubscribe = onSnapshot(doc(db, "invoices", id), (docSnap) => {
-      if (docSnap.exists()) setInvoice(docSnap.data() as InvoiceData);
+    const unsubscribe = db().collection("invoices").doc(id).onSnapshot((docSnap) => {
+      if (docSnap.exists) setInvoice(docSnap.data() as InvoiceData);
     });
-    const unsubscribeSettings = onSnapshot(doc(db, "users", user.uid, "settings", "invoice"), (docSnap) => {
-      if (docSnap.exists()) setSettings(docSnap.data());
+    const unsubscribeSettings = db().collection("users").doc(user.uid).collection("settings").doc("invoice").onSnapshot((docSnap) => {
+      if (docSnap.exists) setSettings(docSnap.data());
     });
     return () => { unsubscribe(); unsubscribeSettings(); };
   }, [id, user]);
@@ -336,7 +337,7 @@ export default function InvoiceReviewScreen() {
       });
       const newSubtotal = updatedLineItems.reduce((sum, item) => sum + item.quantity * item.unit_price - (item.discount || 0), 0);
       const newTotal = newSubtotal + (invoice.taxes || 0);
-      await setDoc(doc(db, "invoices", id), { line_items: updatedLineItems, subtotal: Number(newSubtotal.toFixed(2)), total: Number(newTotal.toFixed(2)) }, { merge: true });
+      await db().collection("invoices").doc(id).set({ line_items: updatedLineItems, subtotal: Number(newSubtotal.toFixed(2)), total: Number(newTotal.toFixed(2)) }, { merge: true });
     } catch (e) {
       console.error("Failed to save manual edit:", e);
       Alert.alert("Error", "Failed to save edit.");
@@ -387,6 +388,10 @@ export default function InvoiceReviewScreen() {
 
   const generatePDF = async () => {
     if (!invoice || !user || !id || isExporting) return;
+    if (!isPro) {
+      router.push("/paywall");
+      return;
+    }
     setIsExporting(true);
     try {
       const customization = { ...(settings || {}) };
@@ -415,13 +420,13 @@ export default function InvoiceReviewScreen() {
 
   const saveInvoiceCurrency = async (code: string) => {
     if (!user || !id) return;
-    try { await setDoc(doc(db, "invoices", id), { currency: code }, { merge: true }); } catch {}
+    try { await db().collection("invoices").doc(id).set({ currency: code }, { merge: true }); } catch {}
     setShowCurrencyModal(false);
   };
 
   const saveInvoiceTemplate = async (templateId: string) => {
     if (!user || !id) return;
-    try { await setDoc(doc(db, "invoices", id), { template: templateId }, { merge: true }); } catch {}
+    try { await db().collection("invoices").doc(id).set({ template: templateId }, { merge: true }); } catch {}
     setShowTemplateModal(false);
   };
 
@@ -434,9 +439,9 @@ export default function InvoiceReviewScreen() {
         onPress: async () => {
           try {
             if (invoice.media_url && invoice.media_url.includes("firebasestorage")) {
-              try { await deleteObject(ref(storage, invoice.media_url)); } catch {}
+              try { await storage().refFromURL(invoice.media_url).delete(); } catch {}
             }
-            await deleteDoc(doc(db, "invoices", id));
+            await db().collection("invoices").doc(id).delete();
             Alert.alert("Deleted", "Invoice deleted successfully.");
             router.replace("/(tabs)/two");
           } catch (error: any) {
@@ -854,12 +859,27 @@ export default function InvoiceReviewScreen() {
                   const activeId = invoice?.template || settings?.template || "modern";
                   const isActive = activeId === tmpl.id;
                   return (
-                    <TouchableOpacity key={tmpl.id} style={[styles.templatePickerCard, isActive && { borderColor: tmpl.color, backgroundColor: `${tmpl.color}18` }]} onPress={() => saveInvoiceTemplate(tmpl.id)}>
+                    <TouchableOpacity
+                      key={tmpl.id}
+                      style={[styles.templatePickerCard, isActive && { borderColor: tmpl.color, backgroundColor: `${tmpl.color}18` }]}
+                      onPress={() => {
+                        if (tmpl.isPremium && !isPro) {
+                          router.push("/paywall");
+                          return;
+                        }
+                        saveInvoiceTemplate(tmpl.id);
+                      }}
+                    >
                       <View style={[styles.templatePickerPreviewBox, isActive && { borderColor: tmpl.color, borderWidth: 2 }]}>
                         <InvoiceTemplatePreview type={tmpl.id} color={tmpl.color} />
                         {tmpl.isPremium && (
                           <View style={styles.templatePickerPremiumBadge}>
                             <Text style={styles.templatePickerPremiumText}>PRO</Text>
+                          </View>
+                        )}
+                        {tmpl.isPremium && !isPro && (
+                          <View style={styles.lockOverlay}>
+                            <Lock color="#fff" size={18} />
                           </View>
                         )}
                       </View>
@@ -959,6 +979,10 @@ const createStyles = (c: AppColors) => StyleSheet.create({
   templatePickerName: { color: c.textSecondary, fontSize: 12, fontWeight: "500" },
   templatePickerPremiumBadge: { position: "absolute", top: 4, left: 4, backgroundColor: "rgba(0,0,0,0.65)", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
   templatePickerPremiumText: { color: "#fff", fontSize: 8, fontWeight: "bold" },
+  lockOverlay: {
+    ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center", alignItems: "center", borderRadius: 8,
+  },
   templatePickerCheck: { position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: 9, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: c.background },
   currencySearchRow: { flexDirection: "row", alignItems: "center", backgroundColor: c.surfaceRaised, borderRadius: 12, paddingHorizontal: 14, marginBottom: 12, height: 46, gap: 10, borderWidth: 1, borderColor: c.border },
   currencySearchInput: { flex: 1, color: c.textPrimary, fontSize: 15 },

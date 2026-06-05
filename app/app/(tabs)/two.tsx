@@ -12,17 +12,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FileText, Trash2 } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
-import { ref, deleteObject } from "firebase/storage";
 import { db, storage } from "../../firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
 import { getCurrencySymbol, formatAmount } from "../../utils/currency";
@@ -32,7 +21,7 @@ import { AppColors } from "@/constants/Colors";
 interface Invoice {
   id: string;
   project_name: string;
-  date: Timestamp | Date | string;
+  date: any;
   total: number;
   status?: string;
   media_url?: string;
@@ -58,11 +47,9 @@ export default function InvoicesScreen() {
     setLoading(true);
     setError(null);
 
-    const invoicesRef = collection(db, "invoices");
-    const q = query(invoicesRef, where("user_id", "==", user.uid), orderBy("date", "desc"));
+    const q = db().collection("invoices").where("user_id", "==", user.uid).orderBy("date", "desc");
 
-    const unsubscribeInvoices = onSnapshot(
-      q,
+    const unsubscribeInvoices = q.onSnapshot(
       (querySnapshot) => {
         const fetchedInvoices: Invoice[] = [];
         querySnapshot.forEach((doc) => {
@@ -126,9 +113,9 @@ export default function InvoicesScreen() {
         onPress: async () => {
           try {
             if (item.media_url && item.media_url.includes("firebasestorage")) {
-              try { await deleteObject(ref(storage, item.media_url)); } catch {}
+              try { await storage().refFromURL(item.media_url).delete(); } catch {}
             }
-            await deleteDoc(doc(db, "invoices", item.id));
+            await db().collection("invoices").doc(item.id).delete();
           } catch (error: any) {
             Alert.alert("Error", "Failed to delete invoice: " + error.message);
           }

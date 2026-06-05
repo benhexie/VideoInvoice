@@ -10,7 +10,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { WebView } from "react-native-webview";
 import { useAuth } from "../context/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { CONFIG } from "../config";
 import { ChevronLeft } from "lucide-react-native";
@@ -36,15 +35,15 @@ export default function PreviewScreen() {
         setError(null);
 
         const [settingsSnap, invoiceSnap] = await Promise.all([
-          getDoc(doc(db, "users", user.uid, "settings", "invoice")),
-          getDoc(doc(db, "invoices", id)),
+          db().collection("users").doc(user.uid).collection("settings").doc("invoice").get(),
+          db().collection("invoices").doc(id).get(),
         ]);
 
         let customization: Record<string, any> = {};
-        if (settingsSnap.exists()) {
-          customization = settingsSnap.data();
+        if (settingsSnap.exists) {
+          customization = settingsSnap.data() as Record<string, any>;
         }
-        if (invoiceSnap.exists() && invoiceSnap.data().template) {
+        if (invoiceSnap.exists && invoiceSnap.data()!.template) {
           customization = { ...customization, template: invoiceSnap.data().template };
         }
 

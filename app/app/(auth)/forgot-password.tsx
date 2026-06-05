@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
 import { useRouter } from 'expo-router';
 import { Mail, ArrowLeft, Send } from 'lucide-react-native';
@@ -27,7 +26,7 @@ export default function ForgotPasswordScreen() {
     setError('');
     setSuccess(false);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await auth().sendPasswordResetEmail(email);
       setSuccess(true);
     } catch (e: any) {
       setError(e.message.replace('Firebase: ', ''));

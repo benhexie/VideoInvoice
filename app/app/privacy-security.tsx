@@ -17,13 +17,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
-import { auth } from "../firebaseConfig";
-import {
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
-  deleteUser,
-} from "firebase/auth";
+import { auth, db, storage } from "../firebaseConfig";
+import { EmailAuthProvider } from "@react-native-firebase/auth";
+import { reauthenticateWithGoogle, reauthenticateWithApple, getSocialAuthError } from "../utils/socialAuth";
 import {
   ArrowLeft,
   Mail,
@@ -40,6 +36,17 @@ import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
 
 type ModalType = "changePassword" | "deleteAccount" | null;
+
+async function deleteStorageFolder(path: string): Promise<void> {
+  try {
+    const ref = storage().ref(path);
+    const list = await ref.listAll();
+    await Promise.all([
+      ...list.items.map((item) => item.delete().catch(() => {})),
+      ...list.prefixes.map((prefix) => deleteStorageFolder(prefix.fullPath)),
+    ]);
+  } catch {}
+}
 
 function PasswordField({
   placeholder,
@@ -124,6 +131,10 @@ export default function PrivacySecurityScreen() {
   const openModal = (type: ModalType) => { resetChangePasswordState(); resetDeleteState(); panY.setValue(0); setActiveModal(type); };
   const closeModal = () => setActiveModal(null);
 
+  const isPasswordUser = user?.providerData?.some((p) => p.providerId === "password") ?? false;
+  const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
+  const isAppleUser = user?.providerData?.some((p) => p.providerId === "apple.com") ?? false;
+
   const handleChangePassword = async () => {
     if (!newPassword || !currentPassword || !confirmPassword) { Alert.alert("Error", "Please fill in all fields."); return; }
     if (newPassword.length < 6) { Alert.alert("Error", "New password must be at least 6 characters."); return; }
@@ -131,8 +142,8 @@ export default function PrivacySecurityScreen() {
     if (!user?.email) { Alert.alert("Error", "No user email found."); return; }
     setChangingPassword(true);
     try {
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
-      await updatePassword(user, newPassword);
+      await user.reauthenticateWithCredential(EmailAuthProvider.credential(user.email, currentPassword));
+      await user.updatePassword(newPassword);
       closeModal();
       Alert.alert("Success", "Your password has been updated.");
     } catch (err: any) {
@@ -148,22 +159,74 @@ export default function PrivacySecurityScreen() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword) { Alert.alert("Error", "Please enter your password to confirm."); return; }
-    if (!user?.email) { Alert.alert("Error", "No user email found."); return; }
+    if (!user) return;
+    if (isPasswordUser && !deletePassword) {
+      Alert.alert("Error", "Please enter your password to confirm.");
+      return;
+    }
     setDeletingAccount(true);
     try {
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, deletePassword));
-      await deleteUser(user);
+      if (isPasswordUser) {
+        if (!user.email) throw new Error("No email found.");
+        await user.reauthenticateWithCredential(EmailAuthProvider.credential(user.email, deletePassword));
+      } else if (isGoogleUser) {
+        await reauthenticateWithGoogle(user);
+      } else if (isAppleUser) {
+        await reauthenticateWithApple(user);
+      }
+
+      const uid = user.uid;
+
+      // 1. Delete all Storage files
+      await deleteStorageFolder(`logos/${uid}`);
+      await deleteStorageFolder(`signatures/${uid}`);
+      await deleteStorageFolder(`quotes/${uid}`);
+      await deleteStorageFolder(`price_lists/${uid}`);
+
+      // 2. Delete all invoices (and their media files)
+      const invoicesSnap = await db().collection("invoices").where("user_id", "==", uid).get();
+      await Promise.all(
+        invoicesSnap.docs.map(async (doc) => {
+          const mediaUrl = doc.data().media_url;
+          if (mediaUrl) {
+            try { await storage().refFromURL(mediaUrl).delete(); } catch {}
+          }
+          await doc.ref.delete();
+        })
+      );
+
+      // 3. Delete Firebase Auth account before the user Firestore doc.
+      //    Deleting the user doc first would fire onSnapshot → hasCompletedOnboarding=false
+      //    → navigate to welcome screen mid-deletion, leaving the user in a zombie state.
+      await user.delete();
+
+      // 4. Clean up user Firestore docs after auth deletion.
+      //    At this point onUserChanged(null) has already fired and _layout.tsx
+      //    is redirecting to onboarding, so these run in the background.
+      try { await db().collection("users").doc(uid).collection("settings").doc("invoice").delete(); } catch {}
+      try { await db().collection("users").doc(uid).delete(); } catch {}
+
+      closeModal();
     } catch (err: any) {
       const code = err?.code || "";
       if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
         Alert.alert("Error", "Incorrect password.");
+      } else if (code === "auth/requires-recent-login") {
+        await auth().signOut().catch(() => {});
+        Alert.alert("Session expired", "For security, please sign in again and then delete your account.");
       } else if (code === "auth/too-many-requests") {
         Alert.alert("Error", "Too many attempts. Please try again later.");
       } else {
-        Alert.alert("Error", err.message || "Failed to delete account.");
+        // Check for social auth cancellation (Google/Apple)
+        const socialMsg = getSocialAuthError(err);
+        if (socialMsg !== null) {
+          Alert.alert("Error", socialMsg);
+        }
+        // null = user cancelled, silently close modal
       }
-    } finally { setDeletingAccount(false); }
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   return (
@@ -298,8 +361,18 @@ export default function PrivacySecurityScreen() {
                 <Text style={styles.warningText}>This action is permanent and cannot be undone. All your invoices, settings, and uploaded files will be deleted.</Text>
               </View>
               <Text style={styles.modalTitle}>Confirm Deletion</Text>
-              <Text style={styles.modalSub}>Enter your password to permanently delete your account.</Text>
-              <PasswordField placeholder="Your password" value={deletePassword} onChangeText={setDeletePassword} show={showDeletePassword} onToggle={() => setShowDeletePassword((v) => !v)} colors={colors} />
+              <Text style={styles.modalSub}>
+                {isPasswordUser
+                  ? "Enter your password to permanently delete your account."
+                  : isGoogleUser
+                  ? "You'll be asked to re-confirm with Google before your account is deleted."
+                  : isAppleUser
+                  ? "You'll be asked to re-confirm with Apple before your account is deleted."
+                  : "This will permanently delete your account and all associated data."}
+              </Text>
+              {isPasswordUser && (
+                <PasswordField placeholder="Your password" value={deletePassword} onChangeText={setDeletePassword} show={showDeletePassword} onToggle={() => setShowDeletePassword((v) => !v)} colors={colors} />
+              )}
               <TouchableOpacity style={[styles.primaryBtn, styles.dangerBtn, deletingAccount && { opacity: 0.7 }]} onPress={handleDeleteAccount} disabled={deletingAccount}>
                 {deletingAccount ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Delete My Account</Text>}
               </TouchableOpacity>

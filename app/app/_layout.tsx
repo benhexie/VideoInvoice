@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { SubscriptionProvider } from "../context/SubscriptionContext";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 
 export {
@@ -49,9 +50,11 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider>
-        <RootLayoutNav />
-      </ThemeProvider>
+      <SubscriptionProvider>
+        <ThemeProvider>
+          <RootLayoutNav />
+        </ThemeProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }
@@ -67,22 +70,31 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === "(auth)";
     const isVerificationScreen = segments[1] === "verify";
     const isSetupScreen = segments[1] === "setup" || segments[1] === "welcome";
+    const isPaywallScreen = segments[0] === "paywall";
 
-    if (!user && !inAuthGroup) {
+    if (!user && (!inAuthGroup || isSetupScreen || isVerificationScreen)) {
+      // Redirect to onboarding if unauthenticated — including screens that
+      // require a signed-in user (setup, welcome, verify) even though they
+      // sit inside the (auth) group.
       router.replace("/(auth)/onboarding");
     } else if (user) {
-      if (!user.emailVerified) {
+      const isEmailPasswordUser = user.providerData?.some(
+        (p) => p.providerId === "password"
+      );
+
+      if (isEmailPasswordUser && !user.emailVerified) {
+        // Only email/password accounts need email verification.
+        // Social sign-in (Apple, Google) are already verified by the provider.
         if (!inAuthGroup || !isVerificationScreen) {
           router.replace("/(auth)/verify");
         }
       } else {
-        // User is verified. Check if they completed onboarding
+        // Verified (or social sign-in). Check if they completed onboarding.
         if (userProfile && !userProfile.hasCompletedOnboarding) {
-          if (!inAuthGroup || !isSetupScreen) {
+          if ((!inAuthGroup || !isSetupScreen) && !isPaywallScreen) {
             router.replace("/(auth)/welcome" as any);
           }
         } else if (userProfile?.hasCompletedOnboarding) {
-          // Setup completed
           if (inAuthGroup) {
             router.replace("/(tabs)");
           }
@@ -107,6 +119,7 @@ function RootLayoutNav() {
           options={{ headerShown: false }}
         />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        <Stack.Screen name="paywall" options={{ headerShown: false }} />
       </Stack>
     </NavThemeProvider>
   );

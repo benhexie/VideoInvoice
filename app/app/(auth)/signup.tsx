@@ -13,12 +13,9 @@ import {
   ScrollView,
   Dimensions,
 } from "react-native";
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-  sendEmailVerification,
-} from "firebase/auth";
-import { auth } from "../../firebaseConfig";
+import { auth, db } from "../../firebaseConfig";
+import { signInWithGoogle, signInWithApple, getSocialAuthError } from "../../utils/socialAuth";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import {
   Mail,
@@ -43,6 +40,14 @@ import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
 
 const { height } = Dimensions.get("window");
+
+function GoogleIcon() {
+  return (
+    <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: "#fff", borderWidth: 1, borderColor: "#ddd", justifyContent: "center", alignItems: "center" }}>
+      <Text style={{ fontSize: 13, fontWeight: "700", color: "#4285F4" }}>G</Text>
+    </View>
+  );
+}
 
 // Colors passed as props so interpolateColor can be called inside the Reanimated worklet
 function AnimatedInput({
@@ -126,9 +131,10 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<"google" | "apple" | null>(null);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, resolvedTheme } = useTheme();
   const styles = createStyles(colors);
 
   const logoGlow = useSharedValue(0.25);
@@ -192,13 +198,34 @@ export default function SignupScreen() {
     setLoading(true);
     setError("");
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName: fullName });
-      await sendEmailVerification(userCredential.user);
+      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+      await Promise.all([
+        userCredential.user.updateProfile({ displayName: fullName }),
+        db().collection("users").doc(userCredential.user.uid).set({ name: fullName }, { merge: true }),
+        userCredential.user.sendEmailVerification(),
+      ]);
     } catch (e: any) {
       setError(getHumanReadableError(e.code));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSocialSignIn = async (provider: "google" | "apple") => {
+    setSocialLoading(provider);
+    setError("");
+    try {
+      const credential = provider === "google"
+        ? await signInWithGoogle()
+        : await signInWithApple();
+      if (credential.additionalUserInfo?.isNewUser) {
+        router.replace("/(auth)/welcome" as any);
+      }
+    } catch (e: any) {
+      const msg = getSocialAuthError(e);
+      if (msg) setError(msg);
+    } finally {
+      setSocialLoading(null);
     }
   };
 
@@ -315,6 +342,42 @@ export default function SignupScreen() {
                 </>
               )}
             </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.socialButton, !!socialLoading && styles.buttonDisabled]}
+              onPress={() => handleSocialSignIn("google")}
+              disabled={!!socialLoading || loading}
+              activeOpacity={0.85}
+            >
+              {socialLoading === "google" ? (
+                <ActivityIndicator color={colors.textPrimary} size="small" />
+              ) : (
+                <>
+                  <GoogleIcon />
+                  <Text style={styles.socialButtonText}>Continue with Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {Platform.OS === "ios" && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={
+                  resolvedTheme === "dark"
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={16}
+                style={styles.appleButton}
+                onPress={() => handleSocialSignIn("apple")}
+              />
+            )}
           </Animated.View>
 
           <Animated.View
@@ -453,6 +516,44 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: c.border,
+  },
+  dividerText: {
+    color: c.textDisabled,
+    fontSize: 13,
+    flexShrink: 0,
+  },
+  socialButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    height: 56,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    marginBottom: 12,
+  },
+  socialButtonText: {
+    color: c.textPrimary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  appleButton: {
+    height: 56,
+    width: "100%",
+    marginBottom: 4,
   },
   footer: {
     flexDirection: "row",
