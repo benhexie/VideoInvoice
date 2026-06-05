@@ -35,7 +35,7 @@ import {
 import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
 
-type ModalType = "changePassword" | "deleteAccount" | null;
+type ModalType = "deleteAccount" | null;
 
 async function deleteStorageFolder(path: string): Promise<void> {
   try {
@@ -91,13 +91,7 @@ export default function PrivacySecurityScreen() {
   const styles = createStyles(colors);
 
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -118,44 +112,32 @@ export default function PrivacySecurityScreen() {
       },
     });
 
-  const panResponderChange = useRef(makePanResponder(() => setActiveModal(null))).current;
   const panResponderDelete = useRef(makePanResponder(() => setActiveModal(null))).current;
 
   const sheetTransform = [{ translateY: panY.interpolate({ inputRange: [0, 500], outputRange: [0, 500], extrapolate: "clamp" }) }];
 
-  const resetChangePasswordState = () => {
-    setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
-    setShowCurrent(false); setShowNew(false); setShowConfirm(false);
-  };
   const resetDeleteState = () => { setDeletePassword(""); setShowDeletePassword(false); };
-  const openModal = (type: ModalType) => { resetChangePasswordState(); resetDeleteState(); panY.setValue(0); setActiveModal(type); };
+  const openModal = (type: ModalType) => { resetDeleteState(); panY.setValue(0); setActiveModal(type); };
   const closeModal = () => setActiveModal(null);
 
   const isPasswordUser = user?.providerData?.some((p) => p.providerId === "password") ?? false;
   const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
   const isAppleUser = user?.providerData?.some((p) => p.providerId === "apple.com") ?? false;
 
-  const handleChangePassword = async () => {
-    if (!newPassword || !currentPassword || !confirmPassword) { Alert.alert("Error", "Please fill in all fields."); return; }
-    if (newPassword.length < 6) { Alert.alert("Error", "New password must be at least 6 characters."); return; }
-    if (newPassword !== confirmPassword) { Alert.alert("Error", "New passwords do not match."); return; }
-    if (!user?.email) { Alert.alert("Error", "No user email found."); return; }
-    setChangingPassword(true);
+  const handleSendPasswordReset = async () => {
+    if (!user?.email) { Alert.alert("Error", "No email address found for this account."); return; }
+    setSendingReset(true);
     try {
-      await user.reauthenticateWithCredential(EmailAuthProvider.credential(user.email, currentPassword));
-      await user.updatePassword(newPassword);
-      closeModal();
-      Alert.alert("Success", "Your password has been updated.");
+      await auth().sendPasswordResetEmail(user.email);
+      Alert.alert("Email sent", `A password reset link has been sent to ${user.email}.`);
     } catch (err: any) {
       const code = err?.code || "";
-      if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
-        Alert.alert("Error", "Current password is incorrect.");
-      } else if (code === "auth/too-many-requests") {
+      if (code === "auth/too-many-requests") {
         Alert.alert("Error", "Too many attempts. Please try again later.");
       } else {
-        Alert.alert("Error", err.message || "Failed to update password.");
+        Alert.alert("Error", err.message || "Failed to send reset email.");
       }
-    } finally { setChangingPassword(false); }
+    } finally { setSendingReset(false); }
   };
 
   const handleDeleteAccount = async () => {
@@ -258,13 +240,13 @@ export default function PrivacySecurityScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>SECURITY</Text>
           <View style={styles.card}>
-            <TouchableOpacity style={styles.actionRow} onPress={() => openModal("changePassword")}>
+            <TouchableOpacity style={styles.actionRow} onPress={handleSendPasswordReset} disabled={sendingReset}>
               <View style={[styles.iconBox, { backgroundColor: colors.accentSubtle }]}>
                 <Lock color={colors.accentLight} size={18} />
               </View>
               <View style={styles.actionText}>
                 <Text style={styles.actionTitle}>Change Password</Text>
-                <Text style={styles.actionSub}>Update your account password</Text>
+                <Text style={styles.actionSub}>Send a reset link to your email</Text>
               </View>
               <ChevronRight color={colors.textDisabled} size={20} />
             </TouchableOpacity>
@@ -323,30 +305,6 @@ export default function PrivacySecurityScreen() {
           </View>
         </View>
       </ScrollView>
-
-      <Modal visible={activeModal === "changePassword"} transparent animationType="slide" onRequestClose={closeModal}>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeModal} />
-            <RNAnimated.View style={[styles.modalSheet, { transform: sheetTransform }]}>
-              <View {...panResponderChange.panHandlers}>
-                <View style={styles.dragHandle} />
-              </View>
-              <Text style={styles.modalTitle}>Change Password</Text>
-              <Text style={styles.modalSub}>Enter your current password and choose a new one.</Text>
-              <PasswordField placeholder="Current password" value={currentPassword} onChangeText={setCurrentPassword} show={showCurrent} onToggle={() => setShowCurrent((v) => !v)} colors={colors} />
-              <PasswordField placeholder="New password" value={newPassword} onChangeText={setNewPassword} show={showNew} onToggle={() => setShowNew((v) => !v)} colors={colors} />
-              <PasswordField placeholder="Confirm new password" value={confirmPassword} onChangeText={setConfirmPassword} show={showConfirm} onToggle={() => setShowConfirm((v) => !v)} colors={colors} />
-              <TouchableOpacity style={[styles.primaryBtn, changingPassword && { opacity: 0.7 }]} onPress={handleChangePassword} disabled={changingPassword}>
-                {changingPassword ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Update Password</Text>}
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.ghostBtn} onPress={closeModal} disabled={changingPassword}>
-                <Text style={styles.ghostBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </RNAnimated.View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
       <Modal visible={activeModal === "deleteAccount"} transparent animationType="slide" onRequestClose={closeModal}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>

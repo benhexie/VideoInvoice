@@ -89,10 +89,15 @@ export default function CameraCaptureScreen() {
   const router = useRouter();
 
   const panY = useRef(new RNAnimated.Value(0)).current;
+  const priceListPanY = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
     if (showCurrencyModal) panY.setValue(0);
   }, [showCurrencyModal]);
+
+  useEffect(() => {
+    if (showPriceListModal) priceListPanY.setValue(0);
+  }, [showPriceListModal]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -102,6 +107,18 @@ export default function CameraCaptureScreen() {
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 100 || gestureState.vy > 1.5) setShowCurrencyModal(false);
         else RNAnimated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
+      },
+    }),
+  ).current;
+
+  const priceListPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 0,
+      onPanResponderMove: RNAnimated.event([null, { dy: priceListPanY }], { useNativeDriver: false }),
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 80 || g.vy > 1.2) setShowPriceListModal(false);
+        else RNAnimated.spring(priceListPanY, { toValue: 0, useNativeDriver: true }).start();
       },
     }),
   ).current;
@@ -518,8 +535,10 @@ export default function CameraCaptureScreen() {
           <TouchableWithoutFeedback onPress={() => setShowPriceListModal(false)}>
             <View style={{ flex: 1 }} />
           </TouchableWithoutFeedback>
-          <View style={[styles.modalContent, { height: "auto", paddingBottom: 36 }]}>
-            <View style={styles.dragHandleContainer}><View style={styles.dragHandle} /></View>
+          <RNAnimated.View style={[styles.modalContent, { height: "auto", paddingBottom: 36, transform: [{ translateY: priceListPanY.interpolate({ inputRange: [0, 1000], outputRange: [0, 1000], extrapolate: "clamp" }) }] }]}>
+            <View {...priceListPanResponder.panHandlers}>
+              <View style={styles.dragHandleContainer}><View style={styles.dragHandle} /></View>
+            </View>
             <Text style={styles.modalTitle}>Price List</Text>
             <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 24, lineHeight: 20 }}>
               Upload your rates so the AI uses your exact prices when generating invoices.
@@ -554,7 +573,7 @@ export default function CameraCaptureScreen() {
                 )}
               </TouchableOpacity>
             )}
-          </View>
+          </RNAnimated.View>
         </View>
       </Modal>
 

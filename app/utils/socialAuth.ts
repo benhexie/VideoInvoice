@@ -52,6 +52,7 @@ export async function signInWithApple() {
     ],
     nonce: hashedNonce,
   });
+  console.log({appleCredential});
 
   if (!appleCredential.identityToken) {
     throw new Error("Apple Sign-In did not return an identity token.");
@@ -64,12 +65,16 @@ export async function signInWithApple() {
 
   const userCredential = await auth().signInWithCredential(oauthCredential);
 
-  // Apple only provides the full name on the very first sign-in
+  // Apple only provides the full name on the very first sign-in.
+  // Always write to Firestore when the name is present this session;
+  // only skip updateProfile if Firebase Auth already has a displayName.
   const { givenName, familyName } = appleCredential.fullName ?? {};
   const update: Record<string, string> = {};
-  if (givenName && !userCredential.user.displayName) {
+  if (givenName) {
     const displayName = [givenName, familyName].filter(Boolean).join(" ");
-    await userCredential.user.updateProfile({ displayName });
+    if (!userCredential.user.displayName) {
+      await userCredential.user.updateProfile({ displayName });
+    }
     update.name = displayName;
   }
   if (userCredential.user.photoURL) update.photoURL = userCredential.user.photoURL;

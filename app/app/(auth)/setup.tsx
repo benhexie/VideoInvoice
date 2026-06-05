@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,13 +10,17 @@ import {
   ActivityIndicator,
   Image,
   StyleSheet,
+  Modal,
+  FlatList,
+  PanResponder,
+  Animated as RNAnimated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { db, storage } from "../../firebaseConfig";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import SignatureScreen from "react-native-signature-canvas";
 import {
   Check,
@@ -24,15 +28,28 @@ import {
   MapPin,
   Phone,
   Mail,
-  User,
   Image as ImageIcon,
   Crown,
   PenTool,
   Lock,
+  ChevronLeft,
+  ChevronDown,
+  Search,
 } from "lucide-react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
 import { useSubscription } from "../../context/SubscriptionContext";
+import COUNTRIES from "../../utils/countries";
+
+type Country = { name: string; flag: string; code: string; dial_code: string };
+
+const TOTAL_STEPS = 3;
+
+const THEME_COLORS = [
+  "#4F46E5", "#7C3AED", "#EC4899", "#FF3366",
+  "#F97316", "#F59E0B", "#10B981", "#14B8A6",
+  "#0EA5E9", "#64748B",
+];
 
 const TEMPLATES = [
   { id: "premium", name: "Premium", color: "#7C3AED", isPremium: true },
@@ -168,13 +185,19 @@ export default function SetupScreen() {
   const styles = createStyles(colors);
   const router = useRouter();
 
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[3].id); // default: "modern"
-  const [name, setName] = useState(userProfile?.name || user?.displayName || "");
+  const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[3].id);
+  const [themeColor, setThemeColor] = useState(TEMPLATES[3].color);
   const [companyName, setCompanyName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState(user?.email || "");
+  const [selectedCountry, setSelectedCountry] = useState<Country>(
+    COUNTRIES.find((c) => c.code === "US") ?? COUNTRIES[0]
+  );
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [email, setEmail] = useState("");
   const [companyLogo, setCompanyLogo] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState("");
@@ -182,10 +205,52 @@ export default function SetupScreen() {
   const [showSignatureCanvas, setShowSignatureCanvas] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const signatureRef = useRef<any>(null);
+  const pickerPanY = useRef(new RNAnimated.Value(0)).current;
+  const pickerPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 0,
+      onPanResponderMove: RNAnimated.event([null, { dy: pickerPanY }], { useNativeDriver: false }),
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 80 || g.vy > 1.2) {
+          setShowCountryPicker(false);
+          pickerPanY.setValue(0);
+        } else {
+          RNAnimated.spring(pickerPanY, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
+
+  const filteredCountries = useMemo(
+    () => COUNTRIES.filter((c) =>
+      c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      c.dial_code.includes(countrySearch)
+    ),
+    [countrySearch]
+  );
+
+  const handlePhoneChange = (value: string) => {
+    if (!value.startsWith("+")) { setPhone(value); return; }
+    // Sort longest dial code first to avoid +1 matching before +1268 etc.
+    const match = [...COUNTRIES]
+      .sort((a, b) => b.dial_code.length - a.dial_code.length)
+      .find((c) => value.startsWith(c.dial_code));
+    if (match) {
+      setSelectedCountry(match);
+      setPhone(value.slice(match.dial_code.length).trimStart());
+    } else {
+      setPhone(value.slice(1));
+    }
+  };
 
   const handleLogoUpload = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: "image/*", copyToCacheDirectory: true });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 1,
+      });
       if (result.canceled || !result.assets || result.assets.length === 0) return;
       setCompanyLogo(result.assets[0].uri);
     } catch (error: any) {
@@ -195,7 +260,11 @@ export default function SetupScreen() {
 
   const handleSignatureUpload = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: "image/*", copyToCacheDirectory: true });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 1,
+      });
       if (result.canceled || !result.assets || result.assets.length === 0) return;
       setSignatureUrl(result.assets[0].uri);
     } catch (error: any) {
@@ -225,6 +294,16 @@ export default function SetupScreen() {
     return await fileRef.getDownloadURL();
   };
 
+  const handleNext = () => {
+    if (step === 2 && !companyName.trim()) {
+      alert("Please enter your company name.");
+      return;
+    }
+    setStep((s) => s + 1);
+  };
+
+  const handleBack = () => setStep((s) => s - 1);
+
   const handleSave = async () => {
     if (!user) return;
     if (!companyName.trim()) { alert("Please enter your company name."); return; }
@@ -232,20 +311,16 @@ export default function SetupScreen() {
     try {
       const finalLogoUrl = await uploadImageToStorage(companyLogo, "logos");
       const finalSignatureUrl = await uploadImageToStorage(signatureUrl, "signatures");
-      const trimmedName = name.trim();
       const userRef = db().collection("users").doc(user.uid);
       await userRef.set({
         hasCompletedOnboarding: true,
-        ...(trimmedName ? { name: trimmedName } : {}),
         updatedAt: new Date().toISOString(),
       }, { merge: true });
-      // Keep Firebase Auth displayName in sync for social sign-in users
-      if (trimmedName && !user.displayName) {
-        await user.updateProfile({ displayName: trimmedName });
-      }
       const customizationRef = db().collection("users").doc(user.uid).collection("settings").doc("invoice");
       await customizationRef.set({
-        template: selectedTemplate, companyName, address, phone, email,
+        template: selectedTemplate, themeColor, companyName, address,
+        phone: phone ? `${selectedCountry.dial_code} ${phone}` : "",
+        email,
         company_logo: finalLogoUrl, signature_url: finalSignatureUrl,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
@@ -255,215 +330,369 @@ export default function SetupScreen() {
     }
   };
 
+  const STEP_TITLES = ["Choose a Template", "Your Details", "Branding"];
+  const STEP_SUBTITLES = [
+    "Pick a style for your invoices. You can change this later.",
+    "Add your business info to appear on every invoice.",
+    "Upload a logo and signature for a professional finish.",
+  ];
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Progress header */}
+      <View style={styles.progressHeader}>
+        <TouchableOpacity
+          style={[styles.backBtn, step === 1 && { opacity: 0 }]}
+          onPress={handleBack}
+          disabled={step === 1}
+        >
+          <ChevronLeft color={colors.textPrimary} size={22} />
+        </TouchableOpacity>
+
+        <View style={styles.progressBarRow}>
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.progressSegment,
+                i < step ? styles.progressSegmentFilled : styles.progressSegmentEmpty,
+                i === 0 && { borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
+                i === TOTAL_STEPS - 1 && { borderTopRightRadius: 4, borderBottomRightRadius: 4 },
+              ]}
+            />
+          ))}
+        </View>
+
+        <Text style={styles.stepLabel}>{step}/{TOTAL_STEPS}</Text>
+      </View>
+
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           scrollEnabled={scrollEnabled}
         >
-          <Animated.View entering={FadeInDown.duration(600)}>
-            <Text style={styles.headerTitle}>Customize Profile</Text>
-            <Text style={styles.headerSubtitle}>Let's set up your default invoice template and business details.</Text>
+          <Animated.View entering={FadeInDown.duration(400)} key={`step-header-${step}`}>
+            <Text style={styles.headerTitle}>{STEP_TITLES[step - 1]}</Text>
+            <Text style={styles.headerSubtitle}>{STEP_SUBTITLES[step - 1]}</Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.section}>
-            <Text style={styles.sectionTitle}>1. Choose a Template</Text>
-            <View style={styles.templateGrid}>
-              {TEMPLATES.map((tmpl) => {
-                const isSelected = selectedTemplate === tmpl.id;
-                return (
-                  <TouchableOpacity
-                    key={tmpl.id}
-                    style={[styles.templateCard, isSelected && { borderColor: tmpl.color, backgroundColor: `${tmpl.color}15` }]}
-                    onPress={() => {
-                      if ((tmpl as any).isPremium && !isPro) {
-                        router.push("/paywall");
-                        return;
-                      }
-                      setSelectedTemplate(tmpl.id);
-                    }}
-                  >
-                    <View style={[styles.templatePreviewBox, isSelected && { borderColor: tmpl.color, borderWidth: 2 }]}>
-                      <TemplatePreview type={tmpl.id} color={tmpl.color} />
-                      {(tmpl as any).isPremium && (
-                        <View style={styles.premiumBadge}>
-                          <Crown color="#fff" size={10} />
-                          <Text style={styles.premiumText}>PRO</Text>
-                        </View>
-                      )}
-                      {(tmpl as any).isPremium && !isPro && (
-                        <View style={styles.lockOverlay}>
-                          <Lock color="#fff" size={20} />
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.templateName, isSelected && { color: tmpl.color, fontWeight: "bold" }]}>
-                      {tmpl.name}
-                    </Text>
-                    {isSelected && (
-                      <View style={[styles.checkBadge, { backgroundColor: tmpl.color }]}>
-                        <Check color="#fff" size={12} />
+          {step === 1 && (
+            <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+              <View style={styles.templateGrid}>
+                {TEMPLATES.map((tmpl) => {
+                  const isSelected = selectedTemplate === tmpl.id;
+                  const activeColor = isSelected ? themeColor : tmpl.color;
+                  return (
+                    <TouchableOpacity
+                      key={tmpl.id}
+                      style={[styles.templateCard, isSelected && { borderColor: themeColor, backgroundColor: `${themeColor}15` }]}
+                      onPress={() => {
+                        if ((tmpl as any).isPremium && !isPro) {
+                          router.push("/paywall");
+                          return;
+                        }
+                        setSelectedTemplate(tmpl.id);
+                        setThemeColor(tmpl.color);
+                      }}
+                    >
+                      <View style={[styles.templatePreviewBox, isSelected && { borderColor: themeColor, borderWidth: 2 }]}>
+                        <TemplatePreview type={tmpl.id} color={activeColor} />
+                        {(tmpl as any).isPremium && (
+                          <View style={styles.premiumBadge}>
+                            <Crown color="#fff" size={10} />
+                            <Text style={styles.premiumText}>PRO</Text>
+                          </View>
+                        )}
+                        {(tmpl as any).isPremium && !isPro && (
+                          <View style={styles.lockOverlay}>
+                            <Lock color="#fff" size={20} />
+                          </View>
+                        )}
                       </View>
-                    )}
+                      <Text style={[styles.templateName, isSelected && { color: themeColor, fontWeight: "bold" }]}>
+                        {tmpl.name}
+                      </Text>
+                      {isSelected && (
+                        <View style={[styles.checkBadge, { backgroundColor: themeColor }]}>
+                          <Check color="#fff" size={12} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.colorLabel}>Theme Color</Text>
+              <View style={styles.colorRow}>
+                {THEME_COLORS.map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.colorSwatch, { backgroundColor: c }, themeColor === c && styles.colorSwatchSelected]}
+                    onPress={() => setThemeColor(c)}
+                  >
+                    {themeColor === c && <Check color="#fff" size={13} strokeWidth={3} />}
                   </TouchableOpacity>
-                );
-              })}
-            </View>
-          </Animated.View>
+                ))}
+              </View>
+            </Animated.View>
+          )}
 
-          <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.section}>
-            <Text style={styles.sectionTitle}>2. Your Details</Text>
+          {step === 2 && (
+            <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+              {[
+                { icon: <Building2 color={colors.textSecondary} size={20} />, placeholder: "Company Name *", value: companyName, onChange: setCompanyName, keyboard: undefined, capitalize: "none" as any },
+                { icon: <MapPin color={colors.textSecondary} size={20} />, placeholder: "Business Address", value: address, onChange: setAddress, keyboard: undefined, capitalize: "none" as any },
+              ].map((field, i) => (
+                <View key={i} style={styles.inputGroup}>
+                  <View style={styles.inputIcon}>{field.icon}</View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={field.placeholder}
+                    placeholderTextColor={colors.textSecondary}
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    keyboardType={field.keyboard}
+                    autoCapitalize={field.capitalize}
+                  />
+                </View>
+              ))}
 
-            {[
-              { icon: <User color={colors.textSecondary} size={20} />, placeholder: "Your Full Name", value: name, onChange: setName, keyboard: undefined, capitalize: "words" as any },
-              { icon: <Building2 color={colors.textSecondary} size={20} />, placeholder: "Company Name", value: companyName, onChange: setCompanyName, keyboard: undefined, capitalize: "none" as any },
-              { icon: <MapPin color={colors.textSecondary} size={20} />, placeholder: "Business Address", value: address, onChange: setAddress, keyboard: undefined, capitalize: "none" as any },
-              { icon: <Phone color={colors.textSecondary} size={20} />, placeholder: "Phone Number", value: phone, onChange: setPhone, keyboard: "phone-pad" as any, capitalize: "none" as any },
-              { icon: <Mail color={colors.textSecondary} size={20} />, placeholder: "Business Email", value: email, onChange: setEmail, keyboard: "email-address" as any, capitalize: "none" as any },
-            ].map((field, i) => (
-              <View key={i} style={styles.inputGroup}>
-                <View style={styles.inputIcon}>{field.icon}</View>
+              {/* Phone with dial code picker */}
+              <View style={styles.inputGroup}>
+                <TouchableOpacity style={styles.dialCodeBtn} onPress={() => { setCountrySearch(""); setShowCountryPicker(true); }}>
+                  <Text style={styles.dialFlag}>{selectedCountry.flag}</Text>
+                  <Text style={styles.dialCode}>{selectedCountry.dial_code}</Text>
+                  <ChevronDown color={colors.textTertiary} size={14} />
+                </TouchableOpacity>
+                <View style={styles.dialDivider} />
                 <TextInput
                   style={styles.input}
-                  placeholder={field.placeholder}
+                  placeholder="Phone Number"
                   placeholderTextColor={colors.textSecondary}
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  keyboardType={field.keyboard}
-                  autoCapitalize={field.capitalize}
+                  value={phone}
+                  onChangeText={handlePhoneChange}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
                 />
               </View>
-            ))}
 
-            {!showSignatureCanvas && (
-              <>
-                <View style={{ marginTop: 16, marginBottom: 12 }}>
-                  <Text style={styles.uploadLabel}>Business Logo</Text>
-                  <Text style={styles.uploadSubLabel}>Add your company logo to display on invoices.</Text>
-                </View>
-                <TouchableOpacity style={styles.logoUploadBtn} onPress={handleLogoUpload} disabled={uploadingLogo}>
-                  {uploadingLogo ? (
-                    <ActivityIndicator color={colors.accent} size="small" />
-                  ) : companyLogo ? (
-                    <Image source={{ uri: companyLogo }} style={{ width: 100, height: 100, resizeMode: "contain" }} />
-                  ) : (
-                    <>
-                      <ImageIcon color={colors.accent} size={24} style={{ marginRight: 8 }} />
-                      <Text style={styles.logoUploadText}>Upload Business Logo (Optional)</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+              {/* Company email */}
+              <View style={styles.inputGroup}>
+                <View style={styles.inputIcon}><Mail color={colors.textSecondary} size={20} /></View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Business Email"
+                  placeholderTextColor={colors.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+            </Animated.View>
+          )}
 
-                <View style={{ marginTop: 24, marginBottom: 8 }}>
-                  <Text style={styles.uploadLabel}>Signature</Text>
-                  <Text style={styles.uploadSubLabel}>Upload or draw your signature for sign-offs.</Text>
-                </View>
-              </>
-            )}
-
-            {!showSignatureCanvas ? (
-              signatureUrl ? (
-                <View style={{ marginTop: 0 }}>
-                  <TouchableOpacity
-                    style={[styles.logoUploadBtn, { height: 120, backgroundColor: "#FFFFFF", borderColor: "#E4E4E7" }]}
-                    onPress={() => setShowSignatureCanvas(true)}
-                    disabled={uploadingSignature}
-                  >
-                    {uploadingSignature ? (
-                      <ActivityIndicator color={colors.accent} size="small" />
-                    ) : (
-                      <Image source={{ uri: signatureUrl }} style={{ width: "100%", height: 100, resizeMode: "contain" }} />
-                    )}
-                  </TouchableOpacity>
-                  <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
-                    <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0, paddingVertical: 12 }]} onPress={handleSignatureUpload} disabled={uploadingSignature}>
-                      <ImageIcon color={colors.accent} size={16} style={{ marginRight: 8 }} />
-                      <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Upload New</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0, paddingVertical: 12 }]} onPress={() => setShowSignatureCanvas(true)} disabled={uploadingSignature}>
-                      <PenTool color={colors.accent} size={16} style={{ marginRight: 8 }} />
-                      <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Draw New</Text>
-                    </TouchableOpacity>
+          {step === 3 && (
+            <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+              {!showSignatureCanvas && (
+                <>
+                  <View style={styles.uploadLabelGroup}>
+                    <Text style={styles.uploadLabel}>Business Logo</Text>
+                    <Text style={styles.uploadSubLabel}>Add your company logo to display on invoices.</Text>
                   </View>
-                </View>
-              ) : (
-                <View style={{ flexDirection: "row", gap: 12, marginTop: 0 }}>
-                  <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0 }]} onPress={handleSignatureUpload} disabled={uploadingSignature}>
-                    {uploadingSignature && !showSignatureCanvas ? (
+                  <TouchableOpacity style={styles.logoUploadBtn} onPress={handleLogoUpload} disabled={uploadingLogo}>
+                    {uploadingLogo ? (
                       <ActivityIndicator color={colors.accent} size="small" />
+                    ) : companyLogo ? (
+                      <Image source={{ uri: companyLogo }} style={{ width: 100, height: 100, resizeMode: "contain" }} />
                     ) : (
                       <>
-                        <ImageIcon color={colors.accent} size={20} style={{ marginRight: 8 }} />
-                        <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Upload Signature</Text>
+                        <ImageIcon color={colors.accent} size={24} style={{ marginRight: 8 }} />
+                        <Text style={styles.logoUploadText}>Upload Business Logo (Optional)</Text>
                       </>
                     )}
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0 }]} onPress={() => setShowSignatureCanvas(true)} disabled={uploadingSignature}>
-                    <PenTool color={colors.accent} size={20} style={{ marginRight: 8 }} />
-                    <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Draw Signature</Text>
-                  </TouchableOpacity>
-                </View>
-              )
-            ) : (
-              <Animated.View entering={FadeInDown.duration(400)} style={{ marginTop: 16 }}>
-                <View style={styles.signatureCanvas}>
-                  <View style={styles.signatureCanvasHeader}>
-                    <Text style={styles.signatureCanvasHint}>Draw your signature below</Text>
+
+                  <View style={[styles.uploadLabelGroup, { marginTop: 24 }]}>
+                    <Text style={styles.uploadLabel}>Signature</Text>
+                    <Text style={styles.uploadSubLabel}>Upload or draw your signature for sign-offs.</Text>
                   </View>
-                  <SignatureScreen
-                    ref={signatureRef}
-                    onOK={handleSignatureOK}
-                    onEmpty={() => alert("Please sign before saving")}
-                    onBegin={() => setScrollEnabled(false)}
-                    onEnd={() => setScrollEnabled(true)}
-                    descriptionText=""
-                    clearText="Clear"
-                    confirmText="Save Signature"
-                    webStyle={`
-                      .m-signature-pad { box-shadow: none; border: none; margin: 0; padding: 0; background-color: #FAFAFA; }
-                      .m-signature-pad--body { border: none; }
-                      .m-signature-pad--footer { display: none; }
-                    `}
-                  />
-                  <View style={styles.signatureCanvasFooter}>
+                </>
+              )}
+
+              {!showSignatureCanvas ? (
+                signatureUrl ? (
+                  <View>
                     <TouchableOpacity
-                      onPress={() => { setShowSignatureCanvas(false); setScrollEnabled(true); }}
-                      style={styles.sigBtnCancel}
+                      style={[styles.logoUploadBtn, { height: 120, backgroundColor: "#FFFFFF", borderColor: "#E4E4E7" }]}
+                      onPress={() => setShowSignatureCanvas(true)}
+                      disabled={uploadingSignature}
                     >
-                      <Text style={styles.sigBtnCancelText}>Cancel</Text>
+                      {uploadingSignature ? (
+                        <ActivityIndicator color={colors.accent} size="small" />
+                      ) : (
+                        <Image source={{ uri: signatureUrl }} style={{ width: "100%", height: 100, resizeMode: "contain" }} />
+                      )}
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => signatureRef.current?.clearSignature()} style={styles.sigBtnClear}>
-                      <Text style={styles.sigBtnClearText}>Clear</Text>
+                    <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
+                      <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0, paddingVertical: 12 }]} onPress={handleSignatureUpload} disabled={uploadingSignature}>
+                        <ImageIcon color={colors.accent} size={16} style={{ marginRight: 8 }} />
+                        <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Upload New</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0, paddingVertical: 12 }]} onPress={() => setShowSignatureCanvas(true)} disabled={uploadingSignature}>
+                        <PenTool color={colors.accent} size={16} style={{ marginRight: 8 }} />
+                        <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Draw New</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0 }]} onPress={handleSignatureUpload} disabled={uploadingSignature}>
+                      {uploadingSignature ? (
+                        <ActivityIndicator color={colors.accent} size="small" />
+                      ) : (
+                        <>
+                          <ImageIcon color={colors.accent} size={20} style={{ marginRight: 8 }} />
+                          <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Upload Signature</Text>
+                        </>
+                      )}
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => signatureRef.current?.readSignature()} style={styles.sigBtnSave}>
-                      <Text style={styles.sigBtnSaveText}>Save</Text>
+                    <TouchableOpacity style={[styles.logoUploadBtn, { flex: 1, marginTop: 0 }]} onPress={() => setShowSignatureCanvas(true)} disabled={uploadingSignature}>
+                      <PenTool color={colors.accent} size={20} style={{ marginRight: 8 }} />
+                      <Text style={[styles.logoUploadText, { fontSize: 12 }]}>Draw Signature</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
-              </Animated.View>
-            )}
-          </Animated.View>
+                )
+              ) : (
+                <Animated.View entering={FadeInDown.duration(400)} style={{ marginTop: 16 }}>
+                  <View style={styles.signatureCanvas}>
+                    <View style={styles.signatureCanvasHeader}>
+                      <Text style={styles.signatureCanvasHint}>Draw your signature below</Text>
+                    </View>
+                    <SignatureScreen
+                      ref={signatureRef}
+                      onOK={handleSignatureOK}
+                      onEmpty={() => alert("Please sign before saving")}
+                      onBegin={() => setScrollEnabled(false)}
+                      onEnd={() => setScrollEnabled(true)}
+                      descriptionText=""
+                      clearText="Clear"
+                      confirmText="Save Signature"
+                      webStyle={`
+                        .m-signature-pad { box-shadow: none; border: none; margin: 0; padding: 0; background-color: #FAFAFA; }
+                        .m-signature-pad--body { border: none; }
+                        .m-signature-pad--footer { display: none; }
+                      `}
+                    />
+                    <View style={styles.signatureCanvasFooter}>
+                      <TouchableOpacity
+                        onPress={() => { setShowSignatureCanvas(false); setScrollEnabled(true); }}
+                        style={styles.sigBtnCancel}
+                      >
+                        <Text style={styles.sigBtnCancelText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => signatureRef.current?.clearSignature()} style={styles.sigBtnClear}>
+                        <Text style={styles.sigBtnClearText}>Clear</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => signatureRef.current?.readSignature()} style={styles.sigBtnSave}>
+                        <Text style={styles.sigBtnSaveText}>Save</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Animated.View>
+              )}
+            </Animated.View>
+          )}
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity style={[styles.saveBtn, loading && { opacity: 0.7 }]} onPress={handleSave} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save & Continue</Text>}
+          <TouchableOpacity
+            style={[styles.saveBtn, loading && { opacity: 0.7 }]}
+            onPress={step < TOTAL_STEPS ? handleNext : handleSave}
+            disabled={loading}
+          >
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.saveBtnText}>{step < TOTAL_STEPS ? "Continue" : "Save & Continue"}</Text>
+            }
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Country dial code picker */}
+      <Modal
+        visible={showCountryPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => { setShowCountryPicker(false); pickerPanY.setValue(0); }}
+      >
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { setShowCountryPicker(false); pickerPanY.setValue(0); }} />
+            <RNAnimated.View
+              style={[styles.pickerSheet, { transform: [{ translateY: pickerPanY.interpolate({ inputRange: [0, 500], outputRange: [0, 500], extrapolate: "clamp" }) }] }]}
+            >
+              <View {...pickerPanResponder.panHandlers}>
+                <View style={styles.pickerHandle} />
+              </View>
+              <Text style={styles.pickerTitle}>Select Country</Text>
+              <View style={styles.pickerSearchRow}>
+                <Search color={colors.textTertiary} size={16} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.pickerSearchInput}
+                  placeholder="Search country or code…"
+                  placeholderTextColor={colors.textDisabled}
+                  value={countrySearch}
+                  onChangeText={setCountrySearch}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+              <FlatList
+                data={filteredCountries}
+                keyExtractor={(item) => item.code}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.pickerItem, selectedCountry.code === item.code && styles.pickerItemSelected]}
+                    onPress={() => { setSelectedCountry(item); setShowCountryPicker(false); pickerPanY.setValue(0); }}
+                  >
+                    <Text style={styles.pickerItemFlag}>{item.flag}</Text>
+                    <Text style={styles.pickerItemName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.pickerItemDial}>{item.dial_code}</Text>
+                    {selectedCountry.code === item.code && <Check color={colors.accent} size={16} />}
+                  </TouchableOpacity>
+                )}
+              />
+            </RNAnimated.View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
+
 const createStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
+  progressHeader: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, gap: 12,
+  },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: c.surface,
+    justifyContent: "center", alignItems: "center",
+    borderWidth: 1, borderColor: c.border, flexShrink: 0,
+  },
+  progressBarRow: { flex: 1, flexDirection: "row", gap: 4, height: 6 },
+  progressSegment: { flex: 1, borderRadius: 3 },
+  progressSegmentFilled: { backgroundColor: c.accent },
+  progressSegmentEmpty: { backgroundColor: c.border },
+  stepLabel: { fontSize: 13, fontWeight: "600", color: c.textTertiary, minWidth: 28, textAlign: "right" },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  headerTitle: { fontSize: 32, fontWeight: "800", color: c.textPrimary, marginBottom: 8, letterSpacing: -0.5 },
-  headerSubtitle: { fontSize: 16, color: c.textSecondary, lineHeight: 24, marginBottom: 32 },
-  section: { marginBottom: 32 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: c.textPrimary, marginBottom: 16 },
+  headerTitle: { fontSize: 28, fontWeight: "800", color: c.textPrimary, marginBottom: 8, letterSpacing: -0.5 },
+  headerSubtitle: { fontSize: 15, color: c.textSecondary, lineHeight: 22, marginBottom: 28 },
   templateGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   templateCard: {
     width: "48%", backgroundColor: c.surface, borderWidth: 2, borderColor: c.border,
@@ -488,12 +717,31 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center", alignItems: "center", borderRadius: 8,
   },
+  colorLabel: { fontSize: 15, fontWeight: "600", color: c.textPrimary, marginTop: 24, marginBottom: 12 },
+  colorRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  colorSwatch: {
+    width: 36, height: 36, borderRadius: 18,
+    justifyContent: "center", alignItems: "center",
+  },
+  colorSwatchSelected: {
+    shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    transform: [{ scale: 1.15 }],
+  },
   inputGroup: {
     flexDirection: "row", alignItems: "center", backgroundColor: c.surface,
     borderRadius: 16, borderWidth: 1, borderColor: c.border, marginBottom: 12, height: 56,
   },
   inputIcon: { paddingHorizontal: 16, justifyContent: "center", alignItems: "center" },
   input: { flex: 1, color: c.textPrimary, fontSize: 16, height: "100%" },
+  dialCodeBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingLeft: 14, paddingRight: 10, height: "100%",
+  },
+  dialFlag: { fontSize: 20 },
+  dialCode: { fontSize: 14, fontWeight: "600", color: c.textPrimary },
+  dialDivider: { width: 1, height: 28, backgroundColor: c.border },
+  uploadLabelGroup: { marginBottom: 8 },
   uploadLabel: { fontSize: 16, fontWeight: "600", color: c.textPrimary },
   uploadSubLabel: { fontSize: 13, color: c.textSecondary, marginTop: 4 },
   logoUploadBtn: {
@@ -532,4 +780,26 @@ const createStyles = (c: AppColors) => StyleSheet.create({
   },
   saveBtn: { backgroundColor: c.accent, borderRadius: 16, height: 56, justifyContent: "center", alignItems: "center" },
   saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  pickerOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  pickerSheet: {
+    backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingBottom: Platform.OS === "ios" ? 40 : 24, paddingTop: 12,
+    borderWidth: 1, borderColor: c.border, maxHeight: "80%",
+  },
+  pickerHandle: { width: 40, height: 4, backgroundColor: c.borderSubtle, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
+  pickerTitle: { fontSize: 17, fontWeight: "700", color: c.textPrimary, marginBottom: 12 },
+  pickerSearchRow: {
+    flexDirection: "row", alignItems: "center", backgroundColor: c.background,
+    borderRadius: 12, borderWidth: 1, borderColor: c.border,
+    paddingHorizontal: 12, height: 44, marginBottom: 12,
+  },
+  pickerSearchInput: { flex: 1, color: c.textPrimary, fontSize: 15 },
+  pickerItem: {
+    flexDirection: "row", alignItems: "center", paddingVertical: 12,
+    paddingHorizontal: 4, gap: 10, borderBottomWidth: 1, borderBottomColor: c.borderSubtle,
+  },
+  pickerItemSelected: { backgroundColor: c.accentSubtle },
+  pickerItemFlag: { fontSize: 22, width: 32 },
+  pickerItemName: { flex: 1, fontSize: 15, color: c.textPrimary },
+  pickerItemDial: { fontSize: 14, color: c.textTertiary, fontWeight: "600" },
 });
