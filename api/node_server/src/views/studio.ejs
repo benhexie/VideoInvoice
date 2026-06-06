@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice — <%= locals.project_name %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    <%- `
+    :root {
+      --accent: ${locals.theme_color || '#0F4C75'};
+      --accent-light: ${locals.theme_color_light || '#e8f4fd'};
+      --dark: ${locals.dark_color || '#0a2d47'};
+      --dark-2: ${locals.dark_color_2 || '#071e30'};
+    }
+    ` %>
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page { size: A4; margin: 0; }
+
+    body {
+      font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+      background: #e8edf2;
+      color: #1a1a1a;
+      font-size: 13px;
+      line-height: 1.6;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @media print {
+      body { background: #fff; }
+      * { animation: none !important; transition: none !important; }
+      .page { box-shadow: none; margin: 0; }
+    }
+
+    .page {
+      display: flex;
+      flex-direction: row;
+      max-width: 800px;
+      min-height: 1122px;
+      margin: 32px auto;
+      box-shadow: 0 12px 60px rgba(0,0,0,0.22);
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ────────────────────────────────────────── */
+    .sidebar {
+      width: 218px;
+      flex-shrink: 0;
+      background: var(--dark);
+      padding: 44px 28px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle geometric accent in sidebar */
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      bottom: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 40px solid rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+
+    .sidebar-logo {
+      max-height: 48px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      margin-bottom: 18px;
+    }
+
+    .sidebar-monogram {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--accent);
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .sidebar-company-name {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: #ffffff;
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+
+    .sidebar-contact {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      font-weight: 300;
+      line-height: 1.85;
+      margin-bottom: 36px;
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: linear-gradient(to right, var(--accent), transparent);
+      margin-bottom: 28px;
+      opacity: 0.7;
+    }
+
+    .sidebar-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+
+    .sidebar-value {
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.85);
+      font-weight: 400;
+      margin-bottom: 22px;
+      line-height: 1.5;
+    }
+
+    .sidebar-project-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      font-weight: 400;
+      font-style: italic;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.35;
+    }
+
+    .sidebar-spacer { flex: 1; }
+
+    .sidebar-footer-note {
+      font-size: 10px;
+      color: rgba(255,255,255,0.28);
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    /* ── MAIN CONTENT ───────────────────────────────────── */
+    .main {
+      flex: 1;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── MAIN HEADER BAR ────────────────────────────────── */
+    .main-header {
+      padding: 40px 40px 24px;
+      border-bottom: 1px solid #eef0f3;
+    }
+
+    .invoice-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #aab0bb;
+      margin-bottom: 4px;
+    }
+
+    .invoice-word {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 38px;
+      font-weight: 400;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    /* ── BILL TO ────────────────────────────────────────── */
+    .billing-section {
+      padding: 28px 40px 20px;
+      border-bottom: 1px solid #eef0f3;
+    }
+
+    .billing-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .client-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: #111;
+      margin-bottom: 3px;
+    }
+
+    .client-detail {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 300;
+      line-height: 1.65;
+      white-space: pre-line;
+    }
+
+    .client-email {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 300;
+      margin-top: 2px;
+    }
+
+    /* ── TABLE SECTION ──────────────────────────────────── */
+    .table-section { flex: 1; padding: 0 40px 8px; }
+
+    .table-heading {
+      padding: 20px 0 10px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #9ca3af;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      background: var(--dark);
+      color: rgba(255,255,255,0.7);
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    thead th:first-child { border-radius: 4px 0 0 4px; }
+    thead th:last-child  { border-radius: 0 4px 4px 0; text-align: right; }
+    thead th.num         { text-align: right; }
+
+    tbody tr { border-bottom: 1px solid #f3f4f6; }
+
+    tbody td {
+      padding: 12px 12px;
+      font-size: 12.5px;
+      color: #374151;
+      font-weight: 300;
+      vertical-align: top;
+    }
+
+    tbody td:last-child { text-align: right; font-weight: 400; }
+    tbody td.num        { text-align: right; }
+
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    tbody tr:last-child { border-bottom: none; }
+
+    /* ── TOTALS ─────────────────────────────────────────── */
+    .totals-section {
+      padding: 16px 40px 28px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .totals-block { width: 260px; }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .totals-row:last-of-type { border-bottom: none; }
+
+    .totals-row-label { font-size: 12px; color: #6b7280; font-weight: 300; }
+    .totals-row-value { font-size: 12px; color: #374151; font-weight: 400; }
+    .totals-row.discount .totals-row-value { color: #059669; }
+
+    .totals-grand {
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: var(--dark);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .totals-grand-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .totals-grand-value {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: var(--accent);
+    }
+
+    /* ── SIGNATURE ──────────────────────────────────────── */
+    .signature-section {
+      padding: 16px 40px 20px;
+      border-top: 1px solid #eef0f3;
+    }
+
+    .sig-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #aab0bb; margin-bottom: 8px; }
+    .sig-img   { max-height: 48px; max-width: 160px; object-fit: contain; display: block; }
+    .sig-line  { border-top: 1px solid #d1d5db; margin-top: 6px; padding-top: 4px; font-size: 10px; color: #9ca3af; letter-spacing: 1px; }
+
+    /* ── TERMS ──────────────────────────────────────────── */
+    .terms-section {
+      padding: 14px 40px;
+      border-top: 1px solid #eef0f3;
+    }
+
+    .terms-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    .terms-text  { font-size: 11.5px; color: #9ca3af; font-weight: 300; line-height: 1.75; white-space: pre-line; }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .main-footer {
+      padding: 16px 40px;
+      border-top: 1px solid #eef0f3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-thanks {
+      font-family: 'DM Serif Display', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: #c4c9d4;
+    }
+
+    .footer-contact {
+      font-size: 10.5px;
+      color: #c4c9d4;
+      font-weight: 300;
+      text-align: right;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+<%
+const fmt = (n) => {
+  const sym = locals.currency || '$';
+  return sym + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
+%>
+<div class="page">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <% if (locals.logo_url) { %>
+      <img class="sidebar-logo" src="<%= locals.logo_url %>" alt="Logo" />
+    <% } else { %>
+      <div class="sidebar-monogram"><%= companyInitial %></div>
+    <% } %>
+
+    <div class="sidebar-company-name"><%= locals.company_name || '' %></div>
+    <div class="sidebar-contact">
+      <% if (locals.company_address) { %><div><%= locals.company_address %></div><% } %>
+      <% if (locals.company_phone)   { %><div><%= locals.company_phone %></div><% } %>
+      <% if (locals.company_email)   { %><div><%= locals.company_email %></div><% } %>
+      <% if (locals.company_website) { %><div><%= locals.company_website %></div><% } %>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-label">Date</div>
+    <div class="sidebar-value"><%= locals.date || new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) %></div>
+
+    <div class="sidebar-label">Project</div>
+    <div class="sidebar-value sidebar-project-name"><%= locals.project_name || '' %></div>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="sidebar-footer-note">
+      <% if (locals.company_email)   { %><div><%= locals.company_email %></div><% } %>
+      <% if (locals.company_website) { %><div><%= locals.company_website %></div><% } %>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- HEADER -->
+    <div class="main-header">
+      <div class="invoice-title">Document</div>
+      <div class="invoice-word">Invoice</div>
+    </div>
+
+    <!-- BILL TO -->
+    <div class="billing-section">
+      <div class="billing-label">Billed To</div>
+      <div class="client-name"><%= locals.client_name || '' %></div>
+      <div class="client-detail"><%= locals.client_address || '' %></div>
+      <% if (locals.client_email) { %><div class="client-email"><%= locals.client_email %></div><% } %>
+    </div>
+
+    <!-- LINE ITEMS -->
+    <div class="table-section">
+      <div class="table-heading">Services &amp; Materials</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:48%">Description</th>
+            <th class="num">Qty</th>
+            <th class="num">Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% (locals.line_items || []).forEach(function(item) { %>
+          <tr>
+            <td><%= item.description %></td>
+            <td class="num"><%= Number(item.quantity || 0).toLocaleString('en-US', {maximumFractionDigits:2}) %></td>
+            <td class="num"><%= fmt(item.unit_price) %></td>
+            <td><%= fmt(item.total || (item.quantity * item.unit_price)) %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TOTALS -->
+    <div class="totals-section">
+      <div class="totals-block">
+        <div class="totals-row">
+          <span class="totals-row-label">Subtotal</span>
+          <span class="totals-row-value"><%= fmt(locals.subtotal) %></span>
+        </div>
+        <% if (locals.discount && Number(locals.discount) > 0) { %>
+        <div class="totals-row discount">
+          <span class="totals-row-label">Discount</span>
+          <span class="totals-row-value">-<%= fmt(locals.discount) %></span>
+        </div>
+        <% } %>
+        <div class="totals-row">
+          <span class="totals-row-label">Tax</span>
+          <span class="totals-row-value"><%= fmt(locals.taxes) %></span>
+        </div>
+        <div class="totals-grand">
+          <span class="totals-grand-label">Total Due</span>
+          <span class="totals-grand-value"><%= fmt(locals.total) %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE -->
+    <% if (locals.show_signature && locals.signature) { %>
+    <div class="signature-section">
+      <div class="sig-label">Authorized Signature</div>
+      <img class="sig-img" src="<%= locals.signature %>" alt="Signature" />
+      <div class="sig-line"><%= locals.company_name || '' %></div>
+    </div>
+    <% } %>
+
+    <!-- TERMS -->
+    <% if (locals.terms) { %>
+    <div class="terms-section">
+      <div class="terms-label">Terms &amp; Conditions</div>
+      <div class="terms-text"><%= locals.terms %></div>
+    </div>
+    <% } %>
+
+    <!-- FOOTER -->
+    <div class="main-footer">
+      <div class="footer-thanks">Thank you for your business.</div>
+      <div class="footer-contact">
+        <% if (locals.company_phone) { %><div><%= locals.company_phone %></div><% } %>
+        <% if (locals.company_email) { %><div><%= locals.company_email %></div><% } %>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

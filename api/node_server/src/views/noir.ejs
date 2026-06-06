@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice — <%= locals.project_name %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    <%- `
+    :root {
+      --accent: ${locals.theme_color || '#00C2CB'};
+      --accent-light: ${locals.theme_color_light || '#00c2cb1a'};
+    }
+    ` %>
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page { size: A4; margin: 0; }
+
+    body {
+      font-family: 'Outfit', 'Helvetica Neue', sans-serif;
+      background: #050505;
+      color: #e2e2e2;
+      font-size: 13px;
+      line-height: 1.6;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @media print {
+      body { background: #0d0d0d; }
+      * { animation: none !important; transition: none !important; }
+      .page { box-shadow: none; margin: 0; }
+    }
+
+    .page {
+      background: #0d0d0d;
+      max-width: 800px;
+      margin: 32px auto;
+      overflow: hidden;
+      box-shadow: 0 16px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    .header {
+      background: #080808;
+      padding: 44px 52px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid #1e1e1e;
+    }
+
+    .header-left {}
+
+    .company-logo {
+      max-height: 40px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      margin-bottom: 16px;
+      filter: brightness(0.85);
+    }
+
+    .company-name {
+      font-family: 'Bebas Neue', Impact, sans-serif;
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .company-meta {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      font-weight: 300;
+      line-height: 1.9;
+    }
+
+    .header-right {
+      text-align: right;
+    }
+
+    .invoice-display {
+      font-family: 'Bebas Neue', Impact, sans-serif;
+      font-size: 72px;
+      letter-spacing: 6px;
+      color: rgba(255,255,255,0.08);
+      line-height: 1;
+      margin-bottom: -4px;
+    }
+
+    .header-date-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      margin-top: 10px;
+    }
+
+    .header-date-value {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      font-weight: 300;
+      margin-top: 3px;
+    }
+
+    /* ── ACCENT LINE ────────────────────────────────────── */
+    .accent-line {
+      height: 1px;
+      background: linear-gradient(to right, var(--accent), transparent 70%);
+      box-shadow: 0 0 8px var(--accent);
+      opacity: 0.6;
+    }
+
+    /* ── META / BILLING ─────────────────────────────────── */
+    .meta-section {
+      background: #0f0f0f;
+      padding: 28px 52px;
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #1e1e1e;
+    }
+
+    .meta-col { flex: 1; }
+    .meta-col:last-child { border-left: 1px solid #222; padding-left: 36px; }
+    .meta-col:first-child { padding-right: 36px; }
+
+    .meta-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+      opacity: 0.85;
+    }
+
+    .meta-name {
+      font-size: 16px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.88);
+      margin-bottom: 4px;
+    }
+
+    .meta-detail {
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      font-weight: 300;
+      line-height: 1.75;
+      white-space: pre-line;
+    }
+
+    /* ── TABLE ──────────────────────────────────────────── */
+    .table-label {
+      padding: 20px 52px 8px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.22);
+    }
+
+    .table-wrapper { padding: 0 52px 4px; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      background: #080808;
+      color: var(--accent);
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      padding: 11px 14px;
+      text-align: left;
+      border-bottom: 1px solid #1e1e1e;
+      opacity: 0.9;
+    }
+
+    thead th:last-child { text-align: right; }
+    thead th.num        { text-align: right; }
+
+    tbody tr { border-bottom: 1px solid #1a1a1a; }
+
+    tbody td {
+      padding: 12px 14px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 300;
+      vertical-align: top;
+    }
+
+    tbody td:last-child { text-align: right; color: rgba(255,255,255,0.75); font-weight: 400; }
+    tbody td.num        { text-align: right; color: rgba(255,255,255,0.6); }
+
+    tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+    tbody tr:last-child { border-bottom: none; }
+
+    /* ── TOTALS ─────────────────────────────────────────── */
+    .totals-section {
+      background: #080808;
+      padding: 28px 52px;
+      border-top: 1px solid #1e1e1e;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Ghost watermark */
+    .totals-section::before {
+      content: 'DUE';
+      position: absolute;
+      left: 32px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 100px;
+      letter-spacing: 8px;
+      color: rgba(255,255,255,0.025);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .totals-content {
+      position: relative;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .totals-block { width: 300px; }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #1e1e1e;
+    }
+
+    .totals-row:last-of-type { border-bottom: none; }
+
+    .totals-row-label { font-size: 12px; font-weight: 300; color: rgba(255,255,255,0.35); }
+    .totals-row-value { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.6); }
+    .totals-row.discount .totals-row-value { color: #34d399; }
+
+    .totals-grand {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .totals-grand-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .totals-grand-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+
+    /* ── SIGNATURE ──────────────────────────────────────── */
+    .signature-section {
+      padding: 22px 52px;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    .sig-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 10px; }
+    .sig-img   { max-height: 48px; max-width: 160px; object-fit: contain; display: block; filter: brightness(0.75) invert(1); }
+    .sig-line  { border-top: 1px solid #2a2a2a; margin-top: 8px; padding-top: 4px; font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 1px; }
+
+    /* ── TERMS ──────────────────────────────────────────── */
+    .terms-section {
+      padding: 16px 52px;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    .terms-label { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 7px; opacity: 0.7; }
+    .terms-text  { font-size: 11.5px; color: rgba(255,255,255,0.25); font-weight: 300; line-height: 1.8; white-space: pre-line; }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .footer {
+      padding: 20px 52px;
+      border-top: 1px solid #1a1a1a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-thanks {
+      font-size: 12px;
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(255,255,255,0.2);
+    }
+
+    .footer-contact {
+      font-size: 10.5px;
+      color: rgba(255,255,255,0.2);
+      font-weight: 300;
+      text-align: right;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+<%
+const fmt = (n) => {
+  const sym = locals.currency || '$';
+  return sym + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+const companyInitial = (locals.company_name || 'C').charAt(0).toUpperCase();
+%>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <% if (locals.logo_url) { %>
+        <img class="company-logo" src="<%= locals.logo_url %>" alt="Logo" />
+      <% } %>
+      <div class="company-name"><%= locals.company_name || '' %></div>
+      <div class="company-meta">
+        <% if (locals.company_address) { %><div><%= locals.company_address %></div><% } %>
+        <% if (locals.company_phone)   { %><div><%= locals.company_phone %></div><% } %>
+        <% if (locals.company_email)   { %><div><%= locals.company_email %></div><% } %>
+        <% if (locals.company_website) { %><div><%= locals.company_website %></div><% } %>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="invoice-display">INV</div>
+      <div class="header-date-label">Invoice Date</div>
+      <div class="header-date-value"><%= locals.date || new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) %></div>
+    </div>
+  </div>
+
+  <!-- ACCENT LINE -->
+  <div class="accent-line"></div>
+
+  <!-- BILLING + PROJECT -->
+  <div class="meta-section">
+    <div class="meta-col">
+      <div class="meta-label">Billed To</div>
+      <div class="meta-name"><%= locals.client_name || '' %></div>
+      <div class="meta-detail"><%= locals.client_address || '' %></div>
+      <% if (locals.client_email) { %><div class="meta-detail"><%= locals.client_email %></div><% } %>
+    </div>
+    <div class="meta-col">
+      <div class="meta-label">Project</div>
+      <div class="meta-name"><%= locals.project_name || '' %></div>
+    </div>
+  </div>
+
+  <!-- TABLE LABEL -->
+  <div class="table-label">Line Items</div>
+
+  <!-- LINE ITEMS TABLE -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50%">Description</th>
+          <th class="num">Qty</th>
+          <th class="num">Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% (locals.line_items || []).forEach(function(item) { %>
+        <tr>
+          <td><%= item.description %></td>
+          <td class="num"><%= Number(item.quantity || 0).toLocaleString('en-US', {maximumFractionDigits:2}) %></td>
+          <td class="num"><%= fmt(item.unit_price) %></td>
+          <td><%= fmt(item.total || (item.quantity * item.unit_price)) %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TOTALS -->
+  <div class="totals-section">
+    <div class="totals-content">
+      <div class="totals-block">
+        <div class="totals-row">
+          <span class="totals-row-label">Subtotal</span>
+          <span class="totals-row-value"><%= fmt(locals.subtotal) %></span>
+        </div>
+        <% if (locals.discount && Number(locals.discount) > 0) { %>
+        <div class="totals-row discount">
+          <span class="totals-row-label">Discount</span>
+          <span class="totals-row-value">-<%= fmt(locals.discount) %></span>
+        </div>
+        <% } %>
+        <div class="totals-row">
+          <span class="totals-row-label">Tax</span>
+          <span class="totals-row-value"><%= fmt(locals.taxes) %></span>
+        </div>
+        <div class="totals-grand">
+          <span class="totals-grand-label">Total Due</span>
+          <span class="totals-grand-value"><%= fmt(locals.total) %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <% if (locals.show_signature && locals.signature) { %>
+  <div class="signature-section">
+    <div class="sig-label">Authorized Signature</div>
+    <img class="sig-img" src="<%= locals.signature %>" alt="Signature" />
+    <div class="sig-line"><%= locals.company_name || '' %></div>
+  </div>
+  <% } %>
+
+  <!-- TERMS -->
+  <% if (locals.terms) { %>
+  <div class="terms-section">
+    <div class="terms-label">Terms &amp; Conditions</div>
+    <div class="terms-text"><%= locals.terms %></div>
+  </div>
+  <% } %>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-thanks">Thank you for your business.</div>
+    <div class="footer-contact">
+      <% if (locals.company_email) { %><div><%= locals.company_email %></div><% } %>
+      <% if (locals.company_phone) { %><div><%= locals.company_phone %></div><% } %>
+      <% if (locals.company_website) { %><div><%= locals.company_website %></div><% } %>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
