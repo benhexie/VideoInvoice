@@ -17,7 +17,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
 
 export default function PreviewScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, template } = useLocalSearchParams<{ id: string; template?: string }>();
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
@@ -43,7 +43,9 @@ export default function PreviewScreen() {
         if (settingsSnap.exists) {
           customization = settingsSnap.data() as Record<string, any>;
         }
-        if (invoiceSnap.exists && invoiceSnap.data()!.template) {
+        if (template) {
+          customization = { ...customization, template };
+        } else if (invoiceSnap.exists && invoiceSnap.data()!.template) {
           customization = { ...customization, template: invoiceSnap.data().template };
         }
 
@@ -78,7 +80,7 @@ export default function PreviewScreen() {
     }
 
     fetchPreview();
-  }, [id, user]);
+  }, [id, user, template]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>

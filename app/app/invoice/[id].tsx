@@ -1058,6 +1058,15 @@ export default function InvoiceReviewScreen() {
                             <Lock color="#fff" size={18} />
                           </View>
                         )}
+                        <TouchableOpacity
+                          style={styles.templatePreviewBtn}
+                          onPress={() => {
+                            setShowTemplateModal(false);
+                            router.push({ pathname: "/preview" as any, params: { id, template: tmpl.id } });
+                          }}
+                        >
+                          <Eye color="#fff" size={12} />
+                        </TouchableOpacity>
                       </View>
                       <Text style={[styles.templatePickerName, isActive && { color: tmpl.color, fontWeight: "700" }]}>{tmpl.name}</Text>
                       {isActive && (
@@ -1232,6 +1241,7 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     justifyContent: "center", alignItems: "center", borderRadius: 8,
   },
   templatePickerCheck: { position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: 9, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: c.background },
+  templatePreviewBtn: { position: "absolute", bottom: 4, right: 4, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 10, width: 22, height: 22, justifyContent: "center", alignItems: "center" },
   currencySearchRow: { flexDirection: "row", alignItems: "center", backgroundColor: c.surfaceRaised, borderRadius: 12, paddingHorizontal: 14, marginBottom: 12, height: 46, gap: 10, borderWidth: 1, borderColor: c.border },
   currencySearchInput: { flex: 1, color: c.textPrimary, fontSize: 15 },
   currencyItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: c.border, borderRadius: 8, paddingHorizontal: 4 },
