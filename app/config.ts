@@ -2,13 +2,13 @@ import { Platform } from 'react-native';
 
 // Helper to handle localhost on Android Emulator vs iOS Simulator vs Physical Device
 const getLocalhostUrl = () => {
-  // if (__DEV__) {
-  //   // In development mode
-  //   if (Platform.OS === 'android') {
-  //     return 'https://ant-striking-presently.ngrok-free.app'; // Android emulator specific loopback IP
-  //   }
-  //   return 'https://ant-striking-presently.ngrok-free.app'; // iOS simulator or web
-  // }
+  if (__DEV__) {
+    // In development mode
+    if (Platform.OS === 'android') {
+      return 'https://ant-striking-presently.ngrok-free.app'; // Android emulator specific loopback IP
+    }
+    return 'https://ant-striking-presently.ngrok-free.app'; // iOS simulator or web
+  }
   
   // Production URL — update this once the Railway service is renamed to videoinvoice
   return 'https://snapquote.up.railway.app';
