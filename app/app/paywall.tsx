@@ -66,9 +66,9 @@ export default function PaywallScreen() {
   const handlePurchase = async () => {
     if (!selectedPackage) return;
     setIsPurchasing(true);
-    await purchasePro(selectedPackage);
+    const success = await purchasePro(selectedPackage);
     setIsPurchasing(false);
-    if (isPro) router.back();
+    if (success) router.back();
   };
 
   const handleRestore = async () => {

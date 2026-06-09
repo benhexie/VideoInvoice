@@ -14,13 +14,13 @@ import { useAuth } from "./AuthContext";
 const IOS_RC_KEY = "test_LTOYNCPEXuzeOlytVgaDOhuSjXG";
 const ANDROID_RC_KEY = "test_LTOYNCPEXuzeOlytVgaDOhuSjXG";
 
-const ENTITLEMENT_ID = "pro";
+const ENTITLEMENT_ID = "VideoInvoice Pro";
 
 type SubscriptionContextType = {
   isPro: boolean;
   isLoading: boolean;
   offerings: PurchasesOffering | null;
-  purchasePro: (pkg: PurchasesPackage) => Promise<void>;
+  purchasePro: (pkg: PurchasesPackage) => Promise<boolean>;
   restorePurchases: () => Promise<void>;
 };
 
@@ -28,7 +28,7 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
   isPro: false,
   isLoading: true,
   offerings: null,
-  purchasePro: async () => {},
+  purchasePro: async () => false,
   restorePurchases: async () => {},
 });
 
@@ -87,14 +87,17 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     syncIdentity();
   }, [user?.uid]);
 
-  const purchasePro = async (pkg: PurchasesPackage) => {
+  const purchasePro = async (pkg: PurchasesPackage): Promise<boolean> => {
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       updateFromCustomerInfo(customerInfo);
+      const isProActive = typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== "undefined";
+      return isProActive;
     } catch (e: any) {
       if (e?.code !== PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) {
         Alert.alert("Purchase Failed", e?.message ?? "Something went wrong. Please try again.");
       }
+      return false;
     }
   };
 
