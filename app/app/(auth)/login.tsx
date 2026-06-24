@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Dimensions,
+  Image,
 } from "react-native";
 import { auth } from "../../firebaseConfig";
 import { signInWithGoogle, signInWithApple, getSocialAuthError } from "../../utils/socialAuth";
@@ -284,7 +285,11 @@ export default function LoginScreen() {
             style={styles.header}
           >
             <Animated.View style={[styles.logoContainer, logoGlowStyle]}>
-              <Text style={styles.logoText}>SQ</Text>
+              <Image
+                source={require("../../assets/images/logo-icon.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </Animated.View>
             <Text style={styles.title}>Good to see{"\n"}you again</Text>
             <Text style={styles.subtitle}>Sign in to continue to VideoInvoice</Text>
@@ -435,23 +440,15 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
   },
   logoContainer: {
-    width: 68,
-    height: 68,
-    backgroundColor: c.accent,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
     marginBottom: 24,
     shadowColor: c.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 28,
     elevation: 10,
   },
-  logoText: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: -1,
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   title: {
     fontSize: 34,

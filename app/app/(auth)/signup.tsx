@@ -12,6 +12,7 @@ import {
   Keyboard,
   ScrollView,
   Dimensions,
+  Image,
 } from "react-native";
 import { auth, db } from "../../firebaseConfig";
 import { signInWithGoogle, signInWithApple, getSocialAuthError } from "../../utils/socialAuth";
@@ -284,7 +285,11 @@ export default function SignupScreen() {
             style={styles.header}
           >
             <Animated.View style={[styles.logoContainer, logoGlowStyle]}>
-              <Text style={styles.logoText}>SQ</Text>
+              <Image
+                source={require("../../assets/images/logo-icon.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </Animated.View>
             <Text style={styles.title}>Start your{"\n"}journey</Text>
             <Text style={styles.subtitle}>Create an account to get started for free</Text>
@@ -444,23 +449,15 @@ const createStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
   },
   logoContainer: {
-    width: 68,
-    height: 68,
-    backgroundColor: c.accent,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
     marginBottom: 24,
     shadowColor: c.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 28,
     elevation: 10,
   },
-  logoText: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: -1,
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   title: {
     fontSize: 34,
