@@ -640,7 +640,7 @@ export default function InvoiceReviewScreen() {
             <ActivityIndicator size="large" color={colors.accentLight} style={{ marginBottom: 16 }} />
             <View style={styles.processingTitleRow}>
               <Sparkles color={colors.accentLight} size={24} />
-              <Text style={styles.processingTitle}>AI is working</Text>
+              <Text style={styles.processingTitle}>Analysing footage</Text>
             </View>
             <Text style={styles.processingSubtitle}>Generating your itemized invoice...</Text>
           </Animated.View>
@@ -810,7 +810,7 @@ export default function InvoiceReviewScreen() {
                 <ActivityIndicator size="large" color={colors.accentLight} style={{ marginBottom: 16 }} />
                 <View style={styles.processingTitleRow}>
                   {isProcessingEdit ? <Sparkles color={colors.accentLight} size={20} /> : <Edit2 color={colors.accentLight} size={20} />}
-                  <Text style={styles.processingTitle}>{isProcessingEdit ? "AI is working" : "Saving Changes"}</Text>
+                  <Text style={styles.processingTitle}>{isProcessingEdit ? "Refining invoice" : "Saving Changes"}</Text>
                 </View>
                 <Text style={styles.processingSubtitle}>Updating your invoice...</Text>
               </View>

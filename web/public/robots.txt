@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://videoinvoice.app
+
+# Sitemaps
+Sitemap: https://videoinvoice.app/sitemap.xml

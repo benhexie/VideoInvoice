@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter);
+
+  --color-brand-primary: #4f46e5;
+  --color-brand-light: #818cf8;
+  --color-brand-dark: #09090b;
+  --color-brand-surface: #18181b;
+  --color-brand-raised: #27272a;
+  --color-brand-border: #27272a;
+  --color-brand-success: #10b981;
+  --color-brand-gold: #d4af37;
+  --color-brand-purple: #7c3aed;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 8s ease-in-out 2s infinite;
+  --animate-glow-pulse: glowPulse 3s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #09090b;
+  color: white;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.bg-grid {
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, 0.45);
+  transition: color 0.15s ease;
+}
+.footer-link:hover {
+  color: white;
+}
+
+.pro-gradient-border {
+  background: linear-gradient(135deg, #7c3aed, #d4af37);
+  padding: 1px;
+  border-radius: 1.25rem;
+}
