@@ -16,7 +16,6 @@ use std::env;
 mod gemini;
 mod models;
 mod prompt;
-mod media;
 mod db;
 
 use gemini::GeminiClient;
