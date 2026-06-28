@@ -97,7 +97,7 @@ PDF Export path:
 ## Project Structure
 
 ```
-SnapQuote/
+VideoInvoice/
 ├── app/                        # Expo React Native app
 │   ├── app/
 │   │   ├── (auth)/             # Onboarding, login, signup, verify, setup
@@ -164,7 +164,7 @@ SnapQuote/
 
 ```bash
 git clone <repo-url>
-cd SnapQuote
+cd VideoInvoice
 ```
 
 ### 2. Backend — environment variables

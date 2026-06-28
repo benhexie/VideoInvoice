@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "generate-previews": "node ./scripts/preview-generator/generate.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -55,6 +56,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "puppeteer": "^24.43.1",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },

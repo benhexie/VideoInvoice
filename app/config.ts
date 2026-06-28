@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
 // Helper to handle localhost on Android Emulator vs iOS Simulator vs Physical Device
 const getLocalhostUrl = () => {
@@ -9,9 +9,9 @@ const getLocalhostUrl = () => {
   //   }
   //   return 'https://ant-striking-presently.ngrok-free.app'; // iOS simulator or web
   // }
-  
+
   // Production URL — update this once the Railway service is renamed to videoinvoice
-  return 'https://snapquote.up.railway.app';
+  return "https://videoinvoice.up.railway.app";
 };
 
 const API_BASE_URL = getLocalhostUrl();
@@ -24,11 +24,12 @@ export const CONFIG = {
       editQuote: `${API_BASE_URL}/api/quotes/edit`,
       previewQuote: (id: string) => `${API_BASE_URL}/api/quotes/${id}/preview`,
       exportQuote: (id: string) => `${API_BASE_URL}/api/quotes/${id}/export`,
-      templatePreview: (name: string) => `${API_BASE_URL}/api/quotes/template-preview/${name}`,
-    }
+      templatePreview: (name: string) =>
+        `${API_BASE_URL}/api/quotes/template-preview/${name}`,
+    },
   },
   app: {
-    name: 'VideoInvoice',
-    version: '1.0.0',
-  }
+    name: "VideoInvoice",
+    version: "1.0.0",
+  },
 };

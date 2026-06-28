@@ -55,18 +55,18 @@ const STEPS: Step[] = [
     cardPosition: "below-spotlight",
   },
   {
-    title: "Upload a Price List",
+    title: "Three Ways to Capture",
     description:
-      "Tap Prices to upload your rate sheet (PDF, CSV, Excel, or Word). AI will use your exact rates when building quotes.",
-    spotlightKey: "pricesBadge",
+      "Switch between Video, Text, and Document mode — record a walkthrough, type a description, or upload a file.",
+    spotlightKey: "modeToggle",
     cardPosition: "below-spotlight",
   },
   {
-    title: "Two Ways to Capture",
+    title: "Add a Price List",
     description:
-      "Switch between Video and Text mode. Record a walkthrough or type a description — whichever suits the job.",
-    spotlightKey: "modeToggle",
-    cardPosition: "below-spotlight",
+      "Tap here to upload your rate sheet (PDF, CSV, Excel, or Word). AI will use your exact rates when building quotes.",
+    spotlightKey: "pricesBadge",
+    cardPosition: "above-spotlight",
   },
   {
     title: "Tap to Record",

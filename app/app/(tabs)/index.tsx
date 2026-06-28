@@ -15,6 +15,7 @@ import {
   PanResponder,
   Animated as RNAnimated,
   Alert,
+  Image,
 } from "react-native";
 import {
   CameraView,
@@ -28,7 +29,6 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { CONFIG } from "../../config";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  Zap,
   Type,
   Video as VideoIcon,
   Send,
@@ -39,7 +39,9 @@ import {
   DollarSign,
   Search,
   FileText,
+  Plus,
   Trash2,
+  RefreshCw,
 } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -49,6 +51,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { AppColors } from "@/constants/Colors";
 import { useSubscription } from "../../context/SubscriptionContext";
 import TutorialOverlay, { LayoutRect } from "../../components/TutorialOverlay";
+
+const logoWhite = require("../../assets/images/logo-white.png");
+const logoBlack = require("../../assets/images/logo-black.png");
 
 // Camera overlay UI is always dark — it renders on top of a live camera feed
 const CAMERA_COLORS = {
@@ -66,6 +71,7 @@ export default function CameraCaptureScreen() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [microphonePermission, requestMicrophonePermission] = useMicrophonePermissions();
   const [inputMode, setInputMode] = useState<"video" | "text">("video");
+  const [cameraFacing, setCameraFacing] = useState<"back" | "front">("back");
   const [textInput, setTextInput] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -83,6 +89,7 @@ export default function CameraCaptureScreen() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
+  const isRecordingRef = useRef(false);
   const currencyBadgeRef = useRef<any>(null);
   const pricesBadgeRef = useRef<any>(null);
   const modeToggleRef = useRef<any>(null);
@@ -93,8 +100,9 @@ export default function CameraCaptureScreen() {
   const [recordButtonRect, setRecordButtonRect] = useState<LayoutRect | undefined>();
   const { user, userProfile } = useAuth();
   const { isPro } = useSubscription();
-  const { colors } = useTheme();
+  const { colors, resolvedTheme } = useTheme();
   const styles = createStyles(colors);
+  const cameraStyles = createCameraStyles(colors);
   const router = useRouter();
 
   const panY = useRef(new RNAnimated.Value(0)).current;
@@ -164,7 +172,6 @@ export default function CameraCaptureScreen() {
         setTimer((prev) => {
           if (prev <= 1) {
             if (timerRef.current) clearInterval(timerRef.current);
-            if (cameraRef.current) { cameraRef.current.stopRecording(); setIsRecording(false); }
             return 0;
           }
           return prev - 1;
@@ -176,6 +183,14 @@ export default function CameraCaptureScreen() {
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isRecording]);
+
+  useEffect(() => {
+    if (timer === 0 && isRecordingRef.current) {
+      isRecordingRef.current = false;
+      cameraRef.current?.stopRecording();
+      setIsRecording(false);
+    }
+  }, [timer]);
 
   function measureElement(ref: React.RefObject<any>, setRect: (r: LayoutRect) => void) {
     ref.current?.measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
@@ -201,15 +216,19 @@ export default function CameraCaptureScreen() {
   const handleRecord = async () => {
     if (!cameraRef.current) return;
     if (isRecording) {
-      cameraRef.current.stopRecording();
+      if (!isRecordingRef.current) return;
+      isRecordingRef.current = false;
+      try { cameraRef.current.stopRecording(); } catch (e) { console.error("stopRecording error", e); }
       setIsRecording(false);
     } else {
+      isRecordingRef.current = true;
       setIsRecording(true);
       try {
         const data = await cameraRef.current.recordAsync({ maxDuration: 60, maxFileSize: 75 * 1024 * 1024 });
         if (data?.uri) setRecordedVideoUri(data.uri);
       } catch (e) {
         console.error("Recording error", e);
+        isRecordingRef.current = false;
         setIsRecording(false);
       }
     }
@@ -230,6 +249,8 @@ export default function CameraCaptureScreen() {
         return;
       }
     }
+    const promptText = textInput.trim() || "Analyze this video to generate an itemized quote.";
+    setTextInput("");
     alert("Video is uploading and processing in the background. Check the Invoices tab for updates.");
     router.push("/(tabs)/two");
     const invoiceDocRef = db().collection("invoices").doc();
@@ -242,14 +263,12 @@ export default function CameraCaptureScreen() {
       const storageRef = storage().ref(`quotes/${user?.uid}/${Date.now()}.mov`);
       await storageRef.put(blob);
       const downloadURL = await storageRef.getDownloadURL();
-      // Patch the stub now that we have the Storage URL, so deletion during
-      // the processing window still cleans up the file.
       await invoiceDocRef.set({ media_url: downloadURL }, { merge: true });
       const token = await user?.getIdToken();
       await fetch(CONFIG.api.endpoints.generateQuote, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ invoice_id: invoiceId, media_urls: [downloadURL], prompt: "Analyze this video to generate an itemized quote.", currency, ...(priceListUrl && { price_list_url: priceListUrl }) }),
+        body: JSON.stringify({ invoice_id: invoiceId, media_urls: [downloadURL], prompt: promptText, currency, ...(priceListUrl && { price_list_url: priceListUrl }) }),
       });
     } catch (e: any) { alert("Error processing video: " + e.message); }
   };
@@ -308,8 +327,6 @@ export default function CameraCaptureScreen() {
         }
         await storageRef.put(blob, { contentType: mimeType });
         documentURL = await storageRef.getDownloadURL();
-        // Patch the stub now that we have the Storage URL, so deletion during
-        // the processing window still cleans up the file.
         await invoiceDocRef.set({ media_url: documentURL }, { merge: true });
       }
       const token = await user?.getIdToken();
@@ -361,7 +378,7 @@ export default function CameraCaptureScreen() {
     } catch (e: any) { alert("Failed to remove price list: " + e.message); }
   };
 
-  // Processing overlay stays dark — renders on top of camera/content
+  // Processing overlay — always dark
   const renderProcessing = (title: string) => (
     <View style={[StyleSheet.absoluteFillObject, cameraStyles.processingOverlay]}>
       <Animated.View entering={FadeIn.duration(500)} style={cameraStyles.processingContent}>
@@ -375,50 +392,66 @@ export default function CameraCaptureScreen() {
     </View>
   );
 
-  // Header over camera feed uses dark overlay styles; over text mode uses themed styles
   const renderHeader = () => {
-    const isTextMode = inputMode === "text";
-    const badgeStyle = isTextMode ? styles.headerBadgeThemed : cameraStyles.headerBadge;
-    const badgeTextStyle = isTextMode ? styles.headerTextThemed : cameraStyles.headerText;
-    const chipStyle = isTextMode ? styles.currencyBadgeThemed : cameraStyles.currencyBadge;
-    const chipTextStyle = isTextMode ? styles.currencyTextThemed : cameraStyles.currencyText;
-    const priceListChipStyle = isTextMode
-      ? [styles.currencyBadgeThemed, priceListUrl ? styles.priceListBadgeActiveThemed : null]
-      : [cameraStyles.currencyBadge, priceListUrl ? cameraStyles.priceListBadgeActive : null];
+    const logo = resolvedTheme === "dark" ? logoWhite : logoBlack;
     return (
       <View style={cameraStyles.header}>
-        <View style={badgeStyle}>
-          <Zap color="#4F46E5" size={16} fill="#4F46E5" />
-          <Text style={badgeTextStyle}>VideoInvoice</Text>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <TouchableOpacity ref={pricesBadgeRef} style={priceListChipStyle} onPress={() => setShowPriceListModal(true)} onLayout={() => measureElement(pricesBadgeRef, setPricesBadgeRect)}>
-            <FileText color={priceListUrl ? colors.success : colors.textSecondary} size={14} />
-            <Text style={[chipTextStyle, { color: priceListUrl ? colors.success : isTextMode ? colors.textSecondary : "#A1A1AA" }]}>
-              {priceListUrl ? "Prices ✓" : "Prices"}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity ref={currencyBadgeRef} style={chipStyle} onPress={() => { setCurrencySearchQuery(""); setCurrencySearchResults(searchCurrency("")); setShowCurrencyModal(true); }} onLayout={() => measureElement(currencyBadgeRef, setCurrencyBadgeRect)}>
-            <DollarSign color={isTextMode ? colors.accent : "#4F46E5"} size={16} />
-            <Text style={chipTextStyle}>{currency}</Text>
-          </TouchableOpacity>
-        </View>
+        <Image source={logo} style={cameraStyles.logoImage} resizeMode="contain" />
+        <TouchableOpacity
+          ref={currencyBadgeRef}
+          style={cameraStyles.currencyBadge}
+          onPress={() => { setCurrencySearchQuery(""); setCurrencySearchResults(searchCurrency("")); setShowCurrencyModal(true); }}
+          onLayout={() => measureElement(currencyBadgeRef, setCurrencyBadgeRect)}
+        >
+          <DollarSign color="#4F46E5" size={15} />
+          <Text style={cameraStyles.currencyText}>{currency}</Text>
+        </TouchableOpacity>
       </View>
     );
   };
 
-  const renderVideoMode = () => {
+  const renderModePills = () => (
+    <View
+      ref={modeToggleRef}
+      style={cameraStyles.modePillsRow}
+      onLayout={() => measureElement(modeToggleRef, setModeToggleRect)}
+    >
+      <TouchableOpacity
+        style={[cameraStyles.modePill, inputMode === "video" && cameraStyles.modePillActive]}
+        onPress={() => setInputMode("video")}
+      >
+        <VideoIcon color={inputMode === "video" ? "#fff" : colors.textSecondary} size={15} />
+        <Text style={[cameraStyles.modePillText, inputMode === "video" && cameraStyles.modePillTextActive]}>Video</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[cameraStyles.modePill, inputMode === "text" && !selectedDoc && cameraStyles.modePillActive]}
+        onPress={() => { setSelectedDoc(null); setInputMode("text"); }}
+      >
+        <Type color={inputMode === "text" && !selectedDoc ? "#fff" : colors.textSecondary} size={15} />
+        <Text style={[cameraStyles.modePillText, inputMode === "text" && !selectedDoc && cameraStyles.modePillTextActive]}>Text</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[cameraStyles.modePill, !!selectedDoc && cameraStyles.modePillActive]}
+        onPress={async () => { await handlePickDocument(); setInputMode("text"); }}
+      >
+        <Paperclip color={selectedDoc ? "#fff" : colors.textSecondary} size={15} />
+        <Text style={[cameraStyles.modePillText, !!selectedDoc && cameraStyles.modePillTextActive]}>Document</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderVideoBody = () => {
     if (!cameraPermission || !microphonePermission) {
       return (
-        <View style={[styles.container, styles.centerAll]}>
+        <View style={styles.centerAll}>
           <ActivityIndicator color={colors.accent} size="large" />
         </View>
       );
     }
     if (!cameraPermission.granted || !microphonePermission.granted) {
       return (
-        <View style={[styles.container, styles.centerAll]}>
-          <Zap color={colors.accent} size={48} style={{ marginBottom: 20 }} />
+        <View style={styles.centerAll}>
+          <FileText color={colors.accent} size={48} style={{ marginBottom: 20 }} />
           <Text style={styles.permissionText}>We need access to your camera and mic to generate quotes.</Text>
           <TouchableOpacity style={styles.permissionButton} onPress={() => { requestCameraPermission(); requestMicrophonePermission(); }}>
             <Text style={styles.permissionButtonText}>Grant Permissions</Text>
@@ -429,132 +462,184 @@ export default function CameraCaptureScreen() {
 
     if (recordedVideoUri) {
       return (
-        <View style={cameraStyles.camera}>
-          <Video source={{ uri: recordedVideoUri }} style={StyleSheet.absoluteFillObject} resizeMode={ResizeMode.COVER} shouldPlay isLooping isMuted={false} />
-          <SafeAreaView style={cameraStyles.safeArea} edges={["top"]}>
-            {renderHeader()}
-            <View style={cameraStyles.overlay}>
-              {isProcessing ? renderProcessing("Analyzing Video...") : (
-                <View style={cameraStyles.reviewControls}>
-                  <TouchableOpacity style={cameraStyles.reviewButtonCancel} onPress={() => setRecordedVideoUri(null)}>
-                    <X color="#fff" size={24} />
-                    <Text style={cameraStyles.reviewButtonText}>Retake</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={cameraStyles.reviewButtonSend} onPress={() => { processVideo(recordedVideoUri); setRecordedVideoUri(null); }}>
-                    <Check color="#fff" size={24} />
-                    <Text style={cameraStyles.reviewButtonText}>Use Video</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+        <View style={cameraStyles.viewfinder}>
+          <Video
+            source={{ uri: recordedVideoUri }}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay
+            isLooping
+            isMuted={false}
+          />
+          {isProcessing ? renderProcessing("Analyzing Video...") : (
+            <View style={cameraStyles.reviewButtonsOverlay}>
+              <TouchableOpacity style={cameraStyles.reviewButtonCancel} onPress={() => setRecordedVideoUri(null)}>
+                <X color="#fff" size={24} />
+                <Text style={cameraStyles.reviewButtonText}>Retake</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={cameraStyles.reviewButtonSend} onPress={() => { processVideo(recordedVideoUri); setRecordedVideoUri(null); }}>
+                <Check color="#fff" size={24} />
+                <Text style={cameraStyles.reviewButtonText}>Use Video</Text>
+              </TouchableOpacity>
             </View>
-          </SafeAreaView>
+          )}
         </View>
       );
     }
 
     return (
-      <CameraView style={cameraStyles.camera} facing="back" ref={cameraRef} mode="video" videoQuality="480p">
-        <SafeAreaView style={cameraStyles.safeArea} edges={["top"]}>
-          {renderHeader()}
-          <View style={cameraStyles.overlay}>
-            {isProcessing ? renderProcessing("Analyzing Video...") : (
-              <View style={cameraStyles.controlsContainer}>
-                {isRecording && (
-                  <View style={cameraStyles.timerBadge}>
-                    <View style={cameraStyles.recordingDot} />
-                    <Text style={cameraStyles.timerText}>{formatTime(timer)}</Text>
-                  </View>
-                )}
-                {!isRecording && <Text style={cameraStyles.instructionText}>Record the space to generate a quote</Text>}
-                <View style={cameraStyles.controls}>
-                  <TouchableOpacity ref={recordBtnRef} style={cameraStyles.recordOuter} onPress={handleRecord} activeOpacity={0.8} onLayout={() => measureElement(recordBtnRef, setRecordButtonRect)}>
-                    <View style={[cameraStyles.recordInner, isRecording && cameraStyles.recordingInner]} />
-                  </TouchableOpacity>
-                </View>
+      <>
+        {/* Viewfinder wrapper — CameraView has zero React children to avoid Fabric index desync */}
+        <View style={cameraStyles.viewfinder}>
+          <CameraView
+            style={StyleSheet.absoluteFillObject}
+            facing={cameraFacing}
+            ref={cameraRef}
+            mode="video"
+            videoQuality="480p"
+          />
+
+          {/* Corner bracket markers */}
+          <View style={[cameraStyles.corner, cameraStyles.cornerTL]} />
+          <View style={[cameraStyles.corner, cameraStyles.cornerTR]} />
+          <View style={[cameraStyles.corner, cameraStyles.cornerBL]} />
+          <View style={[cameraStyles.corner, cameraStyles.cornerBR]} />
+
+          {/* REC badge + timer when recording */}
+          {isRecording && (
+            <View style={cameraStyles.recRow}>
+              <View style={cameraStyles.recBadge}>
+                <View style={cameraStyles.recDot} />
+                <Text style={cameraStyles.recText}>REC</Text>
               </View>
+              <Text style={cameraStyles.recTimer}>{formatTime(timer)}</Text>
+            </View>
+          )}
+
+          {/* Instruction text when idle */}
+          {!isRecording && (
+            <Text style={cameraStyles.instructionText}>Record the space to generate a quote</Text>
+          )}
+
+          {/* Record button + flip button */}
+          {!isProcessing && (
+            <View style={cameraStyles.viewfinderControls}>
+              <TouchableOpacity
+                ref={recordBtnRef}
+                style={cameraStyles.recordOuter}
+                onPress={handleRecord}
+                activeOpacity={0.8}
+                onLayout={() => measureElement(recordBtnRef, setRecordButtonRect)}
+              >
+                <View style={[cameraStyles.recordInner, isRecording && cameraStyles.recordingInner]} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={cameraStyles.flipButton}
+                onPress={() => setCameraFacing(f => f === "back" ? "front" : "back")}
+              >
+                <RefreshCw color="#fff" size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {isProcessing && renderProcessing("Analyzing Video...")}
+        </View>
+
+        {/* Price list chips below viewfinder */}
+        <View style={cameraStyles.promptArea}>
+          <View
+            ref={pricesBadgeRef}
+            style={cameraStyles.chipsRow}
+            onLayout={() => measureElement(pricesBadgeRef, setPricesBadgeRect)}
+          >
+            {priceListUrl ? (
+              <TouchableOpacity
+                style={[cameraStyles.chip, cameraStyles.chipActive]}
+                onPress={() => setShowPriceListModal(true)}
+              >
+                <FileText color={colors.success} size={13} />
+                <Text style={[cameraStyles.chipText, { color: colors.success }]}>
+                  {priceListName || "Prices ✓"}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <View style={cameraStyles.chip}>
+                  <FileText color={colors.textSecondary} size={13} />
+                  <Text style={cameraStyles.chipText}>No price list</Text>
+                </View>
+                <TouchableOpacity style={cameraStyles.chipCta} onPress={() => setShowPriceListModal(true)}>
+                  <Plus color="#818CF8" size={13} />
+                  <Text style={cameraStyles.chipCtaText}>Add price list</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
-        </SafeAreaView>
-      </CameraView>
+        </View>
+      </>
     );
   };
 
-  const renderTextMode = () => (
-    <SafeAreaView style={styles.textModeContainer} edges={["top"]}>
-      {renderHeader()}
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.textModeInner}>
-            {isProcessing ? renderProcessing("Analyzing Request...") : (
-              <View style={styles.textInputContainer}>
-                <Text style={styles.textModeTitle}>Describe your project</Text>
-                <Text style={styles.textModeSub}>Be as detailed as possible to get an accurate quote.</Text>
+  const renderTextBody = () => (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.textModeInner}>
+          {isProcessing ? renderProcessing("Analyzing Request...") : (
+            <View style={styles.textInputContainer}>
+              <Text style={styles.textModeTitle}>Describe your project</Text>
+              <Text style={styles.textModeSub}>Be as detailed as possible to get an accurate quote.</Text>
 
-                {selectedDoc && (
-                  <View style={styles.documentBadge}>
-                    <Paperclip color={colors.accent} size={16} />
-                    <Text style={styles.documentName} numberOfLines={1} ellipsizeMode="middle">{selectedDoc.name}</Text>
-                    <TouchableOpacity onPress={() => setSelectedDoc(null)}>
-                      <X color={colors.textSecondary} size={16} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                <TextInput
-                  style={styles.textInput}
-                  multiline
-                  placeholder="e.g. I need to remodel my 200 sq ft kitchen. New cabinets, quartz countertops, and a tile backsplash..."
-                  placeholderTextColor={colors.textDisabled}
-                  value={textInput}
-                  onChangeText={setTextInput}
-                />
-
-                <View style={styles.textActionRow}>
-                  <TouchableOpacity style={styles.attachButton} onPress={handlePickDocument} disabled={isProcessing}>
-                    <Paperclip color={colors.textSecondary} size={20} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.sendButton, !textInput.trim() && !selectedDoc && styles.sendButtonDisabled]}
-                    onPress={handleSendText}
-                    disabled={(!textInput.trim() && !selectedDoc) || isProcessing}
-                  >
-                    <Send color={textInput.trim() || selectedDoc ? "#fff" : colors.textDisabled} size={20} />
-                    <Text style={[styles.sendButtonText, !textInput.trim() && !selectedDoc && styles.sendButtonTextDisabled]}>Generate Quote</Text>
+              {selectedDoc && (
+                <View style={styles.documentBadge}>
+                  <Paperclip color={colors.accentLight} size={16} />
+                  <Text style={styles.documentName} numberOfLines={1} ellipsizeMode="middle">{selectedDoc.name}</Text>
+                  <TouchableOpacity onPress={() => setSelectedDoc(null)}>
+                    <X color={colors.textSecondary} size={16} />
                   </TouchableOpacity>
                 </View>
+              )}
+
+              <TextInput
+                style={styles.textInput}
+                multiline
+                placeholder="e.g. I need to remodel my 200 sq ft kitchen. New cabinets, quartz countertops, and a tile backsplash..."
+                placeholderTextColor={colors.textDisabled}
+                value={textInput}
+                onChangeText={setTextInput}
+              />
+
+              <View style={styles.textActionRow}>
+                <TouchableOpacity style={styles.attachButton} onPress={handlePickDocument} disabled={isProcessing}>
+                  <Paperclip color={colors.textSecondary} size={20} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sendButton, !textInput.trim() && !selectedDoc && styles.sendButtonDisabled]}
+                  onPress={handleSendText}
+                  disabled={(!textInput.trim() && !selectedDoc) || isProcessing}
+                >
+                  <Send color={textInput.trim() || selectedDoc ? "#fff" : colors.textDisabled} size={20} />
+                  <Text style={[styles.sendButtonText, !textInput.trim() && !selectedDoc && styles.sendButtonTextDisabled]}>Generate Quote</Text>
+                </TouchableOpacity>
               </View>
-            )}
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            </View>
+          )}
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
+
+  const showModePills = !isRecording && !recordedVideoUri &&
+    (inputMode === "text" || (!!cameraPermission?.granted && !!microphonePermission?.granted));
 
   return (
     <View style={styles.container}>
-      {inputMode === "video" ? renderVideoMode() : renderTextMode()}
+      {/* Stable top chrome — never remounts on tab switch */}
+      <SafeAreaView style={styles.topBar} edges={["top"]}>
+        {renderHeader()}
+        {showModePills && renderModePills()}
+      </SafeAreaView>
 
-      {/* Mode selector — positioned above camera, intentionally dark pill */}
-      {!isRecording && !recordedVideoUri && (
-        <View style={cameraStyles.modeSelectorWrapper}>
-          <View ref={modeToggleRef} style={cameraStyles.modeSelector} onLayout={() => measureElement(modeToggleRef, setModeToggleRect)}>
-            {(["video", "text"] as const).map((mode) => (
-              <TouchableOpacity
-                key={mode}
-                style={[cameraStyles.modeButton, inputMode === mode && cameraStyles.modeButtonActive]}
-                onPress={() => setInputMode(mode)}
-              >
-                {mode === "video"
-                  ? <VideoIcon color={inputMode === "video" ? "#fff" : "#A1A1AA"} size={18} />
-                  : <Type color={inputMode === "text" ? "#fff" : "#A1A1AA"} size={18} />}
-                <Text style={[cameraStyles.modeButtonText, inputMode === mode && cameraStyles.modeButtonTextActive]}>
-                  {mode === "video" ? "Video" : "Text"}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
+      {inputMode === "video" ? renderVideoBody() : renderTextBody()}
 
       {/* Price List Modal */}
       <Modal visible={showPriceListModal} transparent animationType="slide" onRequestClose={() => setShowPriceListModal(false)}>
@@ -665,65 +750,244 @@ export default function CameraCaptureScreen() {
   );
 }
 
-// Camera overlay styles — always dark, independent of theme
-const cameraStyles = StyleSheet.create({
+// Camera chrome styles — camera-overlay items stay dark; surrounding chrome follows theme
+const createCameraStyles = (c: AppColors) => StyleSheet.create({
+  // Full-screen camera (review state)
   camera: { flex: 1 },
   safeArea: { flex: 1, justifyContent: "space-between" },
+  overlay: { justifyContent: "flex-end", paddingBottom: 40, paddingHorizontal: 20 },
+
+  // New bounded-camera layout
+  videoModeContainer: {
+    flex: 1,
+    backgroundColor: c.background,
+  },
   header: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? 20 : 0,
+    paddingTop: Platform.OS === "android" ? 12 : 4,
+    paddingBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  headerBadge: {
-    flexDirection: "row", alignItems: "center", backgroundColor: CAMERA_COLORS.overlay,
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, gap: 8,
+  logoImage: {
+    height: 28,
+    width: 120,
   },
-  headerText: { color: CAMERA_COLORS.text, fontWeight: "700", fontSize: 14, letterSpacing: 0.5 },
   currencyBadge: {
-    flexDirection: "row", alignItems: "center", backgroundColor: CAMERA_COLORS.overlay,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: c.surfaceRaised,
+    borderWidth: 1,
+    borderColor: c.border,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    gap: 4,
   },
-  currencyText: { color: CAMERA_COLORS.text, fontWeight: "600", fontSize: 14 },
-  priceListBadgeActive: { backgroundColor: "rgba(16,185,129,0.15)" },
-  overlay: { justifyContent: "flex-end", paddingBottom: 40, paddingHorizontal: 20 },
-  controlsContainer: { alignItems: "center" },
-  controls: { alignItems: "center", marginTop: 20 },
-  recordOuter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: "rgba(255,255,255,0.8)", justifyContent: "center", alignItems: "center", backgroundColor: CAMERA_COLORS.recordOuter },
-  recordInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: CAMERA_COLORS.recordDot },
-  recordingInner: { width: 32, height: 32, borderRadius: 8 },
-  timerBadge: { flexDirection: "row", alignItems: "center", backgroundColor: CAMERA_COLORS.overlay, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, gap: 6 },
-  recordingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: CAMERA_COLORS.recordDot },
-  timerText: { color: CAMERA_COLORS.text, fontWeight: "600", fontVariant: ["tabular-nums"] },
-  instructionText: { color: CAMERA_COLORS.textDim, fontSize: 14, fontWeight: "500", marginBottom: 10, textAlign: "center" },
+  currencyText: { color: c.textPrimary, fontWeight: "600", fontSize: 14 },
+
+  // Mode pills
+  modePillsRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  modePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: c.surfaceRaised,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 20,
+  },
+  modePillActive: { backgroundColor: "#4F46E5", borderColor: "#4F46E5" },
+  modePillText: { color: c.textSecondary, fontWeight: "600", fontSize: 13 },
+  modePillTextActive: { color: "#fff" },
+
+  // Bounded viewfinder
+  viewfinder: { flex: 1 },
+
+  // Corner bracket markers
+  corner: { position: "absolute", width: 22, height: 22 },
+  cornerTL: { top: 14, left: 14, borderTopWidth: 2, borderLeftWidth: 2, borderColor: "#818CF8", borderTopLeftRadius: 3 },
+  cornerTR: { top: 14, right: 14, borderTopWidth: 2, borderRightWidth: 2, borderColor: "#818CF8", borderTopRightRadius: 3 },
+  cornerBL: { bottom: 92, left: 14, borderBottomWidth: 2, borderLeftWidth: 2, borderColor: "#818CF8", borderBottomLeftRadius: 3 },
+  cornerBR: { bottom: 92, right: 14, borderBottomWidth: 2, borderRightWidth: 2, borderColor: "#818CF8", borderBottomRightRadius: 3 },
+
+  // REC indicator
+  recRow: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  recBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#ef4444",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  recDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#fff" },
+  recText: { color: "#fff", fontSize: 11, fontWeight: "700", letterSpacing: 0.8 },
+  recTimer: { color: "#fff", fontSize: 13, fontWeight: "600", fontVariant: ["tabular-nums"] },
+
+  instructionText: {
+    position: "absolute",
+    top: 14,
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+
+  // Viewfinder controls (record + flip)
+  viewfinderControls: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 92,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recordOuter: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: CAMERA_COLORS.recordOuter,
+  },
+  recordInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: CAMERA_COLORS.recordDot },
+  recordingInner: { width: 28, height: 28, borderRadius: 6 },
+  flipButton: {
+    position: "absolute",
+    right: 24,
+    bottom: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // Prompt area below viewfinder
+  promptArea: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    backgroundColor: c.background,
+    gap: 8,
+  },
+  promptInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: c.surfaceRaised,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  promptTextInput: {
+    flex: 1,
+    color: c.textPrimary,
+    fontSize: 14,
+    padding: 0,
+  },
+  chipsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: c.surfaceRaised,
+    borderWidth: 1,
+    borderColor: c.border,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  chipCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(79,70,229,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(99,102,241,0.55)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  chipCtaText: { color: "#818CF8", fontSize: 12, fontWeight: "600" },
+  chipActive: {
+    backgroundColor: "rgba(16,185,129,0.10)",
+    borderColor: "rgba(16,185,129,0.3)",
+  },
+  chipText: { color: c.textSecondary, fontSize: 12, fontWeight: "500" },
+
+  // Processing overlay
   processingOverlay: { backgroundColor: CAMERA_COLORS.processing, justifyContent: "center", alignItems: "center", zIndex: 10 },
   processingContent: { backgroundColor: CAMERA_COLORS.processingCard, padding: 24, borderRadius: 16, alignItems: "center", borderWidth: 1, borderColor: CAMERA_COLORS.processingBorder, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   processingTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
   processingTitle: { color: CAMERA_COLORS.text, marginTop: 0, fontSize: 18, fontWeight: "700" },
   processingSub: { color: "#A1A1AA", marginTop: 8, fontSize: 14 },
+
+  // Review controls (after recording)
   reviewControls: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", paddingBottom: 20 },
+  reviewButtonsOverlay: {
+    position: "absolute",
+    bottom: 24,
+    left: 20,
+    right: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   reviewButtonCancel: { backgroundColor: "rgba(239,68,68,0.9)", flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 24, borderRadius: 30, gap: 8 },
   reviewButtonSend: { backgroundColor: "#4F46E5", flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 24, borderRadius: 30, gap: 8 },
   reviewButtonText: { color: CAMERA_COLORS.text, fontWeight: "600", fontSize: 16 },
-  modeSelectorWrapper: { position: "absolute", top: Platform.OS === "ios" ? 110 : 90, left: 0, right: 0, alignItems: "center", zIndex: 10 },
-  modeSelector: { flexDirection: "row", backgroundColor: "rgba(24,24,27,0.9)", borderRadius: 30, padding: 4, borderWidth: 1, borderColor: "#27272A" },
-  modeButton: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 26, gap: 6 },
-  modeButtonActive: { backgroundColor: "#4F46E5" },
-  modeButtonText: { color: "#A1A1AA", fontWeight: "600", fontSize: 14 },
-  modeButtonTextActive: { color: "#fff" },
+
+  // Legacy — kept for review-state header
+  headerBadge: { flexDirection: "row", alignItems: "center", backgroundColor: CAMERA_COLORS.overlay, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, gap: 8 },
+  headerText: { color: CAMERA_COLORS.text, fontWeight: "700", fontSize: 14, letterSpacing: 0.5 },
+  priceListBadgeActive: { backgroundColor: "rgba(16,185,129,0.15)" },
+  timerBadge: { flexDirection: "row", alignItems: "center", backgroundColor: CAMERA_COLORS.overlay, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, gap: 6 },
+  recordingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: CAMERA_COLORS.recordDot },
+  timerText: { color: CAMERA_COLORS.text, fontWeight: "600", fontVariant: ["tabular-nums"] },
+  controlsContainer: { alignItems: "center" },
+  controls: { alignItems: "center", marginTop: 20 },
 });
 
-// Themed styles — text mode and modal elements
+// Themed styles — modal elements and text mode
 const createStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
-  centerAll: { justifyContent: "center", alignItems: "center", padding: 20 },
+  topBar: { backgroundColor: c.background },
+  centerAll: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
   permissionText: { color: c.textSecondary, textAlign: "center", fontSize: 16, marginBottom: 24, lineHeight: 24 },
   permissionButton: { backgroundColor: c.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
   permissionButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   textModeContainer: { flex: 1, backgroundColor: c.background },
   textModeInner: { flex: 1, padding: 20, justifyContent: "center" },
-  textInputContainer: { flex: 1, paddingTop: Platform.OS === "ios" ? 80 : 60 },
+  textInputContainer: { flex: 1, paddingTop: Platform.OS === "ios" ? 20 : 10 },
   textModeTitle: { color: c.textPrimary, fontSize: 24, fontWeight: "700", marginBottom: 8 },
   textModeSub: { color: c.textSecondary, fontSize: 14, marginBottom: 20 },
   documentBadge: { flexDirection: "row", alignItems: "center", backgroundColor: c.accentSubtle, padding: 12, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: c.accentBorder, gap: 8 },
@@ -757,10 +1021,4 @@ const createStyles = (c: AppColors) => StyleSheet.create({
   priceListUploadBtn: { borderWidth: 1.5, borderStyle: "dashed", borderColor: c.accentBorder, borderRadius: 16, paddingVertical: 28, alignItems: "center", backgroundColor: c.accentSubtle },
   priceListUploadText: { color: c.accentLight, fontSize: 16, fontWeight: "600", marginBottom: 4 },
   priceListUploadSub: { color: c.textDisabled, fontSize: 13 },
-  // Themed header badges (text mode only)
-  headerBadgeThemed: { flexDirection: "row", alignItems: "center", backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, gap: 8 },
-  headerTextThemed: { color: c.textPrimary, fontWeight: "700", fontSize: 14, letterSpacing: 0.5 },
-  currencyBadgeThemed: { flexDirection: "row", alignItems: "center", backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 4 },
-  currencyTextThemed: { color: c.textPrimary, fontWeight: "600", fontSize: 14 },
-  priceListBadgeActiveThemed: { backgroundColor: c.successSubtle, borderColor: c.success },
 });

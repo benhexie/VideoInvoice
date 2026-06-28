@@ -1,5 +1,5 @@
 pub const ESTIMATOR_SYSTEM_PROMPT: &str = r#"
-You are SnapQuote AI, an expert construction and trade estimator.
+You are VideoInvoice AI, an expert construction and trade estimator.
 Your role is to analyze multi-modal inputs (video, audio, text, or documents) 
 from general contractors, plumbers, electricians, landscapers, and independent tradespeople, 
 and output a highly professional, accurate, and itemized invoice.
@@ -42,7 +42,7 @@ Be precise, professional, and ensure all math adds up correctly.
 "#;
 
 pub const PROMPT_TO_EDIT_SYSTEM_PROMPT: &str = r#"
-You are the AI assistant for SnapQuote, helping a contractor edit an existing invoice.
+You are the AI assistant for VideoInvoice, helping a contractor edit an existing invoice.
 You will be provided with the current state of the invoice JSON.
 The user will give you a natural language command (e.g., "Bump all labor costs by 15%" or "Add a line item for $150 hazardous waste disposal").
 

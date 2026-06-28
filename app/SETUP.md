@@ -11,10 +11,10 @@
 
 These files are **gitignored** and must be obtained from the Firebase console for the `snapquote-5d09f` project:
 
-| File | Platform | Where to place |
-|------|----------|----------------|
-| `GoogleService-Info.plist` | iOS | `app/GoogleService-Info.plist` |
-| `google-services.json` | Android | `app/google-services.json` |
+| File                       | Platform | Where to place                 |
+| -------------------------- | -------- | ------------------------------ |
+| `GoogleService-Info.plist` | iOS      | `app/GoogleService-Info.plist` |
+| `google-services.json`     | Android  | `app/google-services.json`     |
 
 1. Go to the [Firebase Console](https://console.firebase.google.com/) → Project `snapquote-5d09f`
 2. Navigate to **Project Settings → Your apps**
@@ -25,7 +25,7 @@ These files are **gitignored** and must be obtained from the Firebase console fo
 Copy `.env.example` to `.env.local` (if present) and fill in the required values. At minimum:
 
 ```
-EXPO_PUBLIC_API_URL=https://snapquote.up.railway.app
+EXPO_PUBLIC_API_URL=https://videoinvoice.up.railway.app
 ```
 
 For local development against a local API server, the app auto-detects `localhost` on simulators/emulators via [app/config.ts](config.ts).
@@ -48,7 +48,7 @@ npx expo run:android
 
 ## Bundle Identifiers
 
-| Platform | Bundle ID |
-|----------|-----------|
-| iOS | `com.videoinvoice.app` |
-| Android | `com.videoinvoice.app` |
+| Platform | Bundle ID              |
+| -------- | ---------------------- |
+| iOS      | `com.videoinvoice.app` |
+| Android  | `com.videoinvoice.app` |

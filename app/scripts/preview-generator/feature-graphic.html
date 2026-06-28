@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VideoInvoice Feature Graphic</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: #0a0a14;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      #feature-graphic {
+        width: 1024px;
+        height: 500px;
+        background: linear-gradient(135deg, #0f0e1a 0%, #1a1333 50%, #0f1a2e 100%);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 72px;
+      }
+      .blob {
+        position: absolute;
+        border-radius: 50%;
+      }
+      .grid-bg {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(79,70,229,0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(79,70,229,0.05) 1px, transparent 1px);
+        background-size: 48px 48px;
+      }
+      .left {
+        position: relative;
+        z-index: 10;
+        max-width: 460px;
+      }
+      .logo-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 24px;
+      }
+      .logo-box {
+        width: 72px;
+        height: 72px;
+        background: #18181B;
+        border-radius: 18px;
+        border: 1.5px solid #27272A;
+        overflow: hidden;
+        padding: 8px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .logo-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .app-name {
+        color: #FAFAFA;
+        font-size: 42px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        line-height: 1;
+      }
+      .app-sub {
+        color: #818CF8;
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 4px;
+        letter-spacing: 0.04em;
+      }
+      .tagline {
+        color: #A1A1AA;
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.5;
+        margin-bottom: 32px;
+      }
+      .tagline strong {
+        color: #FAFAFA;
+        font-weight: 600;
+      }
+      .chips {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 10px 14px;
+      }
+      .chip-icon { font-size: 18px; }
+      .chip-label { color: #FAFAFA; font-size: 13px; font-weight: 500; }
+
+      /* Phone mockup */
+      .phone-wrap {
+        position: relative;
+        z-index: 10;
+        transform: rotate(-4deg) translateY(12px);
+      }
+      .phone {
+        width: 240px;
+        height: 480px;
+        background: #09090B;
+        border-radius: 36px;
+        border: 2px solid #27272A;
+        overflow: hidden;
+        box-shadow: 0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
+      }
+      .phone-status {
+        height: 36px;
+        background: #09090B;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 0 18px 6px;
+      }
+      .phone-status .time {
+        color: #FAFAFA;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .battery-icon {
+        width: 10px;
+        height: 7px;
+        border: 1.5px solid #FAFAFA;
+        border-radius: 2px;
+        position: relative;
+      }
+      .battery-icon::after {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        background: #FAFAFA;
+        border-radius: 1px;
+      }
+      .invoice-card {
+        background: #FAFAFA;
+        margin: 8px;
+        border-radius: 12px;
+        overflow: hidden;
+        height: calc(100% - 60px);
+      }
+      .inv-header {
+        background: linear-gradient(135deg, #4F46E5, #3730A3);
+        padding: 14px 14px 12px;
+      }
+      .inv-header .inv-label {
+        color: rgba(255,255,255,0.6);
+        font-size: 7px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 2px;
+      }
+      .inv-header .company {
+        color: #fff;
+        font-weight: 800;
+        font-size: 14px;
+      }
+      .inv-header .company-sub {
+        color: rgba(255,255,255,0.6);
+        font-size: 8px;
+        margin-top: 2px;
+      }
+      .inv-bill {
+        background: #F4F4F5;
+        padding: 8px 14px;
+        border-bottom: 1px solid #E4E4E7;
+      }
+      .inv-bill .bill-label {
+        color: #71717A;
+        font-size: 7px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .inv-bill .bill-name {
+        color: #09090B;
+        font-weight: 600;
+        font-size: 11px;
+      }
+      .inv-bill .bill-sub {
+        color: #71717A;
+        font-size: 9px;
+        margin-top: 1px;
+      }
+      .inv-items {
+        padding: 8px 14px;
+      }
+      .items-header {
+        display: flex;
+        justify-content: space-between;
+        padding-bottom: 5px;
+        border-bottom: 1.5px solid #4F46E5;
+        margin-bottom: 6px;
+      }
+      .items-header span {
+        color: #71717A;
+        font-size: 7px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .cat-label {
+        color: #4F46E5;
+        font-size: 7px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 6px 0 3px;
+      }
+      .cat-label.green { color: #10B981; }
+      .cat-label.amber { color: #F59E0B; }
+      .line-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3px;
+      }
+      .line-row .desc { color: #3F3F46; font-size: 9px; }
+      .line-row .amt  { color: #09090B; font-weight: 600; font-size: 9px; }
+      .total-row {
+        background: #4F46E5;
+        border-radius: 8px;
+        padding: 6px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .total-row .total-label { color: #fff; font-size: 10px; font-weight: 700; }
+      .total-row .total-amt   { color: #fff; font-size: 13px; font-weight: 800; }
+      .phone-glow {
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 160px;
+        height: 30px;
+        background: rgba(79,70,229,0.3);
+        border-radius: 50%;
+        filter: blur(18px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="feature-graphic">
+
+      <!-- Background blobs -->
+      <div class="blob" style="top:-120px;left:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(79,70,229,0.18) 0%,transparent 70%)"></div>
+      <div class="blob" style="bottom:-100px;right:260px;width:400px;height:400px;background:radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)"></div>
+      <div class="blob" style="top:80px;right:80px;width:280px;height:280px;background:radial-gradient(circle,rgba(16,185,129,0.08) 0%,transparent 70%)"></div>
+      <div class="grid-bg"></div>
+
+      <!-- LEFT: text -->
+      <div class="left">
+        <div class="logo-row">
+          <div class="logo-box">
+            <img src="../../assets/images/logo-white.png" alt="VideoInvoice" />
+          </div>
+          <div>
+            <div class="app-name">VideoInvoice</div>
+            <div class="app-sub">AI Estimator for Contractors</div>
+          </div>
+        </div>
+
+        <p class="tagline">
+          Point your camera at the job site.<br>
+          <strong>Get a professional invoice in seconds.</strong>
+        </p>
+
+        <div class="chips">
+          <div class="chip"><span class="chip-icon">🎥</span><span class="chip-label">Video-to-invoice AI</span></div>
+          <div class="chip"><span class="chip-icon">✏️</span><span class="chip-label">Natural-language edits</span></div>
+          <div class="chip"><span class="chip-icon">📄</span><span class="chip-label">6 PDF templates</span></div>
+          <div class="chip"><span class="chip-icon">💳</span><span class="chip-label">Payment tracking</span></div>
+          <div class="chip"><span class="chip-icon">📎</span><span class="chip-label">Document upload</span></div>
+          <div class="chip"><span class="chip-icon">🌐</span><span class="chip-label">Multi-currency</span></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: phone mockup -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-status">
+            <span class="time">9:41</span>
+            <div class="battery-icon"></div>
+          </div>
+          <div class="invoice-card">
+            <div class="inv-header">
+              <div class="inv-label">INVOICE · INV-0024</div>
+              <div class="company">Ryan's Electric</div>
+              <div class="company-sub">Portland, OR · (503) 555-0190</div>
+            </div>
+            <div class="inv-bill">
+              <div class="bill-label">Bill To</div>
+              <div class="bill-name">James Wilson</div>
+              <div class="bill-sub">Maple Street Properties</div>
+            </div>
+            <div class="inv-items">
+              <div class="items-header">
+                <span>Description</span>
+                <span>Amount</span>
+              </div>
+              <div class="cat-label">Materials</div>
+              <div class="line-row"><span class="desc">Subway tile 4×12</span><span class="amt">$900.00</span></div>
+              <div class="line-row"><span class="desc">Cement board</span><span class="amt">$400.00</span></div>
+              <div class="cat-label green">Labor</div>
+              <div class="line-row"><span class="desc">Tile installation</span><span class="amt">$1,360.00</span></div>
+              <div class="line-row"><span class="desc">Grouting & sealing</span><span class="amt">$390.00</span></div>
+              <div class="cat-label amber">Fees</div>
+              <div class="line-row"><span class="desc">Permit + Disposal</span><span class="amt">$280.00</span></div>
+              <div class="total-row">
+                <span class="total-label">Total Due</span>
+                <span class="total-amt">$3,650.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-glow"></div>
+      </div>
+
+    </div>
+  </body>
+</html>
