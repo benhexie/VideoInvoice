@@ -46,7 +46,6 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       }
       ::-webkit-scrollbar { width: 0px; background: transparent; }
-
       #device-frame {
         width: 414px;
         height: 896px;
@@ -54,17 +53,6 @@
         position: relative;
         overflow: hidden;
         box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
-      }
-
-      .status-bar-text { color: #FAFAFA; }
-
-      /* Camera viewfinder grid */
-      .viewfinder {
-        background: #0a0a0f;
-        background-image:
-          linear-gradient(rgba(79,70,229,0.08) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(79,70,229,0.08) 1px, transparent 1px);
-        background-size: 40px 40px;
       }
     </style>
   </head>
@@ -75,8 +63,8 @@
       <div class="h-[47px] w-full flex justify-between items-end px-6 pb-2 z-50 bg-bg absolute top-0">
         <span class="font-semibold text-[15px] tracking-tight text-text">9:41</span>
         <div class="flex gap-1.5 items-center">
-          <i data-lucide="signal"      class="w-4 h-4 text-text" style="stroke-width:2.5"></i>
-          <i data-lucide="wifi"        class="w-4 h-4 text-text" style="stroke-width:2.5"></i>
+          <i data-lucide="signal"       class="w-4 h-4 text-text" style="stroke-width:2.5"></i>
+          <i data-lucide="wifi"         class="w-4 h-4 text-text" style="stroke-width:2.5"></i>
           <i data-lucide="battery-full" class="w-5 h-5 text-text" style="stroke-width:2.5"></i>
         </div>
       </div>
@@ -91,10 +79,10 @@
     </div>
 
     <script>
-      const params = new URLSearchParams(window.location.search);
-      const screen = params.get("screen") || "capture";
-      const content  = document.getElementById("content");
-      const tabBar   = document.getElementById("tab-bar");
+      const params  = new URLSearchParams(window.location.search);
+      const screen  = params.get("screen") || "capture";
+      const content = document.getElementById("content");
+      const tabBar  = document.getElementById("tab-bar");
 
       const renderTabBar = (activeTab) => {
         const tabs = [
@@ -112,7 +100,7 @@
             </div>`;
         }).join("");
 
-        if (["detail", "preview"].includes(screen)) {
+        if (["detail", "preview", "settings"].includes(screen)) {
           tabBar.style.display = "none";
           content.style.paddingBottom = "0";
         } else {
@@ -133,7 +121,7 @@
 
               <!-- Top bar -->
               <div class="flex justify-between items-center px-5 pt-3 pb-3 bg-bg">
-                <img src="../../assets/images/logo-white.png" style="height:26px;width:auto;object-fit:contain" alt="VideoInvoice" />
+                <img src="../../assets/images/logo-white.png" style="height:20px;width:auto;object-fit:contain" alt="VideoInvoice" />
                 <div class="flex items-center gap-1.5 bg-raised border border-border rounded-full px-3 py-1.5">
                   <i data-lucide="dollar-sign" style="width:14px;height:14px;color:#4F46E5;stroke-width:2.5"></i>
                   <span class="text-text text-[13px] font-semibold">USD</span>
@@ -157,7 +145,10 @@
               </div>
 
               <!-- Camera Viewfinder -->
-              <div class="viewfinder flex-1 relative flex items-center justify-center" style="min-height:380px">
+              <div class="flex-1 relative flex items-center justify-center overflow-hidden" style="min-height:360px">
+                <img src="../../../web/public/job-site.jpg"
+                     style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" alt="" />
+
                 <!-- Corner markers -->
                 <div class="absolute top-5 left-5 w-8 h-8 border-t-2 border-l-2 border-accent-l opacity-80 rounded-tl-sm"></div>
                 <div class="absolute top-5 right-5 w-8 h-8 border-t-2 border-r-2 border-accent-l opacity-80 rounded-tr-sm"></div>
@@ -177,8 +168,8 @@
 
                 <!-- Record button -->
                 <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-                  <div class="w-18 h-18 rounded-full border-[3px] border-white flex items-center justify-center" style="width:72px;height:72px">
-                    <div class="w-10 h-10 bg-error rounded-full" style="width:44px;height:44px"></div>
+                  <div class="rounded-full border-[3px] border-white flex items-center justify-center" style="width:72px;height:72px">
+                    <div class="bg-error rounded-full" style="width:44px;height:44px"></div>
                   </div>
                   <span class="text-white text-[11px] font-medium opacity-80">Tap to stop</span>
                 </div>
@@ -195,9 +186,10 @@
                   <i data-lucide="file-text" style="width:13px;height:13px;color:#71717A;stroke-width:2"></i>
                   <span class="text-text-ter text-[12px]">No price list</span>
                 </div>
-                <div class="flex items-center gap-2 bg-raised border border-border-sub rounded-full px-3 py-1.5 cursor-pointer">
-                  <i data-lucide="plus" style="width:13px;height:13px;color:#71717A;stroke-width:2"></i>
-                  <span class="text-text-ter text-[12px]">Add price list</span>
+                <div class="flex items-center gap-2 rounded-full px-3 py-1.5"
+                     style="background:rgba(79,70,229,0.18);border:1px solid rgba(99,102,241,0.55)">
+                  <i data-lucide="plus" style="width:13px;height:13px;color:#818CF8;stroke-width:2"></i>
+                  <span style="color:#818CF8;font-size:12px;font-weight:600">Add price list</span>
                 </div>
               </div>
             </div>`;
@@ -207,62 +199,96 @@
         invoices: () => {
           renderTabBar("invoices");
 
-          const makeCard = ({ name, date, total, status, statusColor, statusBg, currency }) => {
-            const badgeStyle = `background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;padding:3px 10px;border-radius:9999px`;
-            return `
-              <div class="bg-surface border border-border rounded-2xl p-4 flex flex-row items-center gap-3">
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(79,70,229,0.15)">
-                  <i data-lucide="file-text" style="width:20px;height:20px;color:#818CF8;stroke-width:2"></i>
+          const makeCard = ({ name, date, total, status, statusColor, statusBg, statusBorder, currency }) => `
+            <div style="background:#18181B;border:1px solid #27272A;border-radius:20px;overflow:hidden;
+                        display:flex;flex-direction:row;margin-bottom:12px;
+                        box-shadow:0 4px 10px rgba(0,0,0,0.12)">
+              <div style="width:3px;background:#4F46E5;flex-shrink:0"></div>
+              <div style="flex:1;padding:16px 15px">
+                <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center;margin-bottom:11px">
+                  <div style="display:flex;flex-direction:row;align-items:center">
+                    <div style="width:42px;height:42px;border-radius:13px;background:rgba(79,70,229,0.15);
+                                display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                      <i data-lucide="file-text" style="width:20px;height:20px;color:#818CF8;stroke-width:2"></i>
+                    </div>
+                    <div style="margin-left:10px;background:rgba(34,197,94,0.12);
+                                border:1px solid rgba(34,197,94,0.2);padding:3px 10px;border-radius:12px">
+                      <span style="color:#4ADE80;font-size:12px;font-weight:600;letter-spacing:0.5px">Invoice</span>
+                    </div>
+                  </div>
+                  <div style="width:34px;height:34px;border-radius:17px;background:rgba(239,68,68,0.08);
+                              display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <i data-lucide="trash-2" style="width:16px;height:16px;color:#EF4444;stroke-width:2"></i>
+                  </div>
                 </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-text font-semibold text-[15px] truncate">${name}</p>
-                  <p class="text-text-ter text-[12px] mt-0.5">${date}</p>
+                <p style="font-size:17px;font-weight:700;color:#FAFAFA;margin-bottom:10px;
+                           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.2px">${name}</p>
+                <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center">
+                  <span style="font-size:13px;color:#71717A;font-weight:500">${date}</span>
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+                    <span style="font-size:22px;font-weight:800;color:#FAFAFA;letter-spacing:-0.5px">${currency}${total}</span>
+                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;
+                                 border:1px solid ${statusBorder};color:${statusColor};background:${statusBg}">${status}</span>
+                  </div>
                 </div>
-                <div class="flex flex-col items-end gap-1.5">
-                  <span class="text-text font-bold text-[15px]">${currency}${total}</span>
-                  <span style="${badgeStyle}">${status}</span>
-                </div>
-              </div>`;
-          };
+              </div>
+            </div>`;
 
           return `
             <div class="flex flex-col h-full bg-bg">
+
               <!-- Header -->
-              <div class="px-5 pt-4 pb-4 bg-bg">
-                <div class="flex items-center justify-between">
-                  <h1 class="text-[28px] font-bold text-text">Invoices</h1>
-                  <div class="w-8 h-8 bg-raised rounded-full flex items-center justify-center">
-                    <i data-lucide="search" style="width:16px;height:16px;color:#A1A1AA;stroke-width:2"></i>
+              <div style="padding:20px 24px 14px">
+                <h1 style="font-size:32px;font-weight:700;color:#FAFAFA;letter-spacing:-0.5px;margin:0">Invoices</h1>
+                <p style="font-size:15px;color:#71717A;margin-top:4px">Your generated quotes</p>
+              </div>
+
+              <!-- Filter pills -->
+              <div style="display:flex;flex-direction:row;gap:8px;padding:0 20px 14px;overflow-x:auto">
+                <div style="display:flex;align-items:center;gap:6px;background:#4F46E5;border-radius:9999px;
+                            padding:6px 12px;flex-shrink:0">
+                  <span style="color:#fff;font-size:13px;font-weight:700">All</span>
+                  <div style="min-width:18px;height:18px;border-radius:9px;background:rgba(255,255,255,0.25);
+                              display:flex;align-items:center;justify-content:center;padding:0 4px">
+                    <span style="font-size:10px;font-weight:700;color:#fff">5</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;background:#27272A;border:1.5px solid #27272A;
+                            border-radius:9999px;padding:5px 12px;flex-shrink:0">
+                  <div style="width:8px;height:8px;border-radius:4px;background:#EF4444"></div>
+                  <span style="color:#A1A1AA;font-size:13px;font-weight:600">Unpaid</span>
+                  <div style="min-width:18px;height:18px;border-radius:9px;background:#1e1e1e;
+                              display:flex;align-items:center;justify-content:center;padding:0 4px">
+                    <span style="font-size:10px;font-weight:700;color:#A1A1AA">2</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;background:#27272A;border:1.5px solid #27272A;
+                            border-radius:9999px;padding:5px 12px;flex-shrink:0">
+                  <div style="width:8px;height:8px;border-radius:4px;background:#F59E0B"></div>
+                  <span style="color:#A1A1AA;font-size:13px;font-weight:600">Partial</span>
+                  <div style="min-width:18px;height:18px;border-radius:9px;background:#1e1e1e;
+                              display:flex;align-items:center;justify-content:center;padding:0 4px">
+                    <span style="font-size:10px;font-weight:700;color:#A1A1AA">1</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;background:#27272A;border:1.5px solid #27272A;
+                            border-radius:9999px;padding:5px 12px;flex-shrink:0">
+                  <div style="width:8px;height:8px;border-radius:4px;background:#10B981"></div>
+                  <span style="color:#A1A1AA;font-size:13px;font-weight:600">Paid</span>
+                  <div style="min-width:18px;height:18px;border-radius:9px;background:#1e1e1e;
+                              display:flex;align-items:center;justify-content:center;padding:0 4px">
+                    <span style="font-size:10px;font-weight:700;color:#A1A1AA">2</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Filter chips -->
-              <div class="flex flex-row gap-2 px-5 pb-4 overflow-x-auto">
-                <div class="flex items-center bg-accent rounded-full px-4 py-1.5 flex-shrink-0">
-                  <span style="color:#fff;font-size:13px;font-weight:700">All</span>
-                </div>
-                <div class="flex items-center gap-1.5 bg-raised border border-border rounded-full px-4 py-1.5 flex-shrink-0">
-                  <div class="w-2 h-2 rounded-full bg-error"></div>
-                  <span style="color:#A1A1AA;font-size:13px;font-weight:500">Unpaid</span>
-                </div>
-                <div class="flex items-center gap-1.5 bg-raised border border-border rounded-full px-4 py-1.5 flex-shrink-0">
-                  <div class="w-2 h-2 rounded-full bg-warning"></div>
-                  <span style="color:#A1A1AA;font-size:13px;font-weight:500">Partial</span>
-                </div>
-                <div class="flex items-center gap-1.5 bg-raised border border-border rounded-full px-4 py-1.5 flex-shrink-0">
-                  <div class="w-2 h-2 rounded-full bg-success"></div>
-                  <span style="color:#A1A1AA;font-size:13px;font-weight:500">Paid</span>
-                </div>
-              </div>
-
               <!-- Invoice list -->
-              <div class="flex-1 overflow-y-auto px-5 space-y-3 pb-4">
-                ${makeCard({ name:"Bathroom Remodel",    date:"Jun 27 · 8 line items", total:"3,840.00", currency:"$", status:"UNPAID",  statusColor:"#EF4444", statusBg:"rgba(239,68,68,0.12)" })}
-                ${makeCard({ name:"Kitchen Renovation",  date:"Jun 22 · 14 line items", total:"12,500.00", currency:"$", status:"PARTIAL",  statusColor:"#F59E0B", statusBg:"rgba(245,158,11,0.12)" })}
-                ${makeCard({ name:"HVAC Installation",   date:"Jun 15 · 5 line items", total:"2,200.00", currency:"$", status:"PAID",    statusColor:"#10B981", statusBg:"rgba(16,185,129,0.12)" })}
-                ${makeCard({ name:"Deck Replacement",    date:"Jun 10 · 6 line items", total:"4,650.00", currency:"$", status:"UNPAID",  statusColor:"#EF4444", statusBg:"rgba(239,68,68,0.12)" })}
-                ${makeCard({ name:"Drywall & Painting",  date:"Jun 4 · 7 line items", total:"1,900.00", currency:"$", status:"PAID",    statusColor:"#10B981", statusBg:"rgba(16,185,129,0.12)" })}
+              <div style="flex:1;overflow-y:auto;padding:4px 16px 16px">
+                ${makeCard({ name:"Bathroom Remodel",   date:"Jun 27, 2026", total:"3,840.00", currency:"$", status:"Unpaid",  statusColor:"#EF4444", statusBg:"rgba(239,68,68,0.08)",  statusBorder:"#EF4444" })}
+                ${makeCard({ name:"Kitchen Renovation", date:"Jun 22, 2026", total:"12,500.00",currency:"$", status:"Partial", statusColor:"#F59E0B", statusBg:"rgba(245,158,11,0.10)", statusBorder:"#F59E0B" })}
+                ${makeCard({ name:"HVAC Installation",  date:"Jun 15, 2026", total:"2,200.00", currency:"$", status:"Paid",    statusColor:"#10B981", statusBg:"rgba(16,185,129,0.08)", statusBorder:"#10B981" })}
+                ${makeCard({ name:"Deck Replacement",   date:"Jun 10, 2026", total:"4,650.00", currency:"$", status:"Unpaid",  statusColor:"#EF4444", statusBg:"rgba(239,68,68,0.08)",  statusBorder:"#EF4444" })}
+                ${makeCard({ name:"Drywall & Painting", date:"Jun 4, 2026",  total:"1,900.00", currency:"$", status:"Paid",    statusColor:"#10B981", statusBg:"rgba(16,185,129,0.08)", statusBorder:"#10B981" })}
               </div>
             </div>`;
         },
@@ -271,94 +297,123 @@
         detail: () => {
           renderTabBar("detail");
 
-          const makeItem = (name, qty, unit, price, total) => `
-            <div class="flex flex-row items-center py-3 border-b border-border">
-              <div class="flex-1 min-w-0">
-                <p class="text-text text-[14px] font-medium truncate">${name}</p>
-                ${qty ? `<p class="text-text-ter text-[12px] mt-0.5">${qty} ${unit} × $${price}</p>` : `<p class="text-text-ter text-[12px] mt-0.5">Fixed fee</p>`}
+          const makeItem = (qty, desc, price) => `
+            <div style="background:#18181B;border-radius:16px;padding:13px 15px;margin-bottom:8px;
+                        display:flex;flex-direction:row;align-items:center">
+              <div style="flex:1">
+                <div style="margin-bottom:5px">
+                  <span style="background:rgba(79,70,229,0.15);border-radius:8px;padding:2px 8px;
+                               font-size:11px;font-weight:700;color:#818CF8">${qty}x</span>
+                </div>
+                <p style="font-size:14px;color:#FAFAFA;margin:0">${desc}</p>
               </div>
-              <span class="text-text font-semibold text-[14px] ml-3">$${total}</span>
-            </div>`;
-
-          const makeSection = (label, color, items) => `
-            <div class="mb-1">
-              <div class="flex items-center gap-2 py-2.5">
-                <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${color}"></div>
-                <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#71717A">${label}</span>
+              <div style="display:flex;flex-direction:row;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+                <span style="font-size:15px;font-weight:700;color:#FAFAFA">${price}</span>
+                <i data-lucide="edit-2" style="width:15px;height:15px;color:#A1A1AA;stroke-width:2"></i>
+                <i data-lucide="trash-2" style="width:14px;height:14px;color:#EF4444;stroke-width:2"></i>
               </div>
-              ${items}
             </div>`;
 
           return `
             <div class="flex flex-col h-full bg-bg">
 
               <!-- Header -->
-              <div class="flex items-center gap-2 px-4 pt-3 pb-3 bg-bg border-b border-border">
-                <div class="w-9 h-9 rounded-full bg-raised flex items-center justify-center flex-shrink-0">
-                  <i data-lucide="chevron-left" style="width:20px;height:20px;color:#FAFAFA;stroke-width:2.5"></i>
+              <div style="display:flex;flex-direction:row;align-items:center;
+                          padding:6px 6px 6px 4px;border-bottom:1px solid #27272A">
+                <div style="padding:8px">
+                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#FAFAFA;stroke-width:2.5"></i>
                 </div>
-                <div class="flex-1 min-w-0">
-                  <h1 class="text-text font-bold text-[16px] truncate">Bathroom Remodel</h1>
-                  <p class="text-text-ter text-[12px]">Jun 27, 2026</p>
-                </div>
-                <div class="flex gap-2">
-                  <div class="w-9 h-9 rounded-full bg-raised flex items-center justify-center">
-                    <i data-lucide="share" style="width:18px;height:18px;color:#A1A1AA;stroke-width:2"></i>
+                <span style="flex:1;font-size:18px;font-weight:700;color:#FAFAFA;
+                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bathroom Remodel</span>
+                <div style="display:flex;flex-direction:row;align-items:center">
+                  <div style="padding:8px;border-radius:12px">
+                    <i data-lucide="eye" style="width:22px;height:22px;color:#A1A1AA;stroke-width:2"></i>
                   </div>
-                  <div class="w-9 h-9 rounded-full bg-accent flex items-center justify-center">
-                    <i data-lucide="file-text" style="width:18px;height:18px;color:#fff;stroke-width:2"></i>
+                  <div style="padding:8px;border-radius:12px">
+                    <i data-lucide="share" style="width:22px;height:22px;color:#A1A1AA;stroke-width:2"></i>
                   </div>
-                </div>
-              </div>
-
-              <!-- Summary card -->
-              <div class="mx-4 mt-4 bg-surface border border-border rounded-2xl p-4 flex flex-row items-center justify-between">
-                <div>
-                  <p class="text-text-sec text-[12px] font-medium">Total</p>
-                  <p class="text-text text-[28px] font-bold mt-0.5">$3,650.00</p>
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                  <div class="flex items-center gap-1.5 rounded-full px-3 py-1.5" style="background:rgba(239,68,68,0.12)">
-                    <div class="w-2 h-2 rounded-full bg-error"></div>
-                    <span style="color:#EF4444;font-size:12px;font-weight:700">UNPAID</span>
-                  </div>
-                  <div class="flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-raised border border-border">
-                    <i data-lucide="credit-card" style="width:12px;height:12px;color:#A1A1AA;stroke-width:2"></i>
-                    <span style="color:#A1A1AA;font-size:12px;font-weight:500">Mark paid</span>
+                  <div style="padding:8px;border-radius:12px">
+                    <i data-lucide="trash-2" style="width:22px;height:22px;color:#EF4444;stroke-width:2"></i>
                   </div>
                 </div>
               </div>
 
-              <!-- Line items -->
-              <div class="flex-1 overflow-y-auto px-4 mt-4">
-                ${makeSection("MATERIALS", "#818CF8", [
-                  makeItem("Subway tile 4×12",    200, "sqft", "4.50",  "900.00"),
-                  makeItem("Cement board",         50, "sheets","8.00", "400.00"),
-                  makeItem("Grout & adhesive",     "", "",      "",     "120.00"),
-                ].join(""))}
-                ${makeSection("LABOR", "#10B981", [
-                  makeItem("Demo & prep",           8, "hrs",  "75.00", "600.00"),
-                  makeItem("Tile installation",    16, "hrs",  "85.00","1,360.00"),
-                  makeItem("Grouting & sealing",    6, "hrs",  "65.00", "390.00"),
-                ].join(""))}
-                ${makeSection("FEES", "#F59E0B", [
-                  makeItem("Permit fee",           "", "",      "",     "150.00"),
-                  makeItem("Disposal",             "", "",      "",     "130.00"),
-                ].join(""))}
+              <!-- Scrollable body -->
+              <div style="flex:1;overflow-y:auto;padding:12px 16px 4px">
 
-                <!-- Total row -->
-                <div class="flex justify-between items-center py-4 border-t-2 border-border-sub mt-1 mb-2">
-                  <span class="text-text font-bold text-[16px]">Total</span>
-                  <span class="text-accent-l font-bold text-[20px]">$3,650.00</span>
+                <!-- Original Request (collapsed) -->
+                <div style="background:#18181B;border:1px solid #27272A;border-radius:16px;
+                            padding:14px 16px;margin-bottom:14px;
+                            display:flex;flex-direction:row;justify-content:space-between;align-items:center">
+                  <div style="display:flex;flex-direction:row;align-items:center;gap:8px">
+                    <i data-lucide="message-square" style="width:16px;height:16px;color:#A1A1AA;stroke-width:2"></i>
+                    <span style="font-size:14px;font-weight:600;color:#FAFAFA">Original Request</span>
+                  </div>
+                  <i data-lucide="chevron-down" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2"></i>
                 </div>
+
+                <!-- Generated Invoice header + chips -->
+                <div style="margin-bottom:14px">
+                  <p style="font-size:16px;font-weight:700;color:#FAFAFA;margin:0 0 10px">Generated Invoice</p>
+                  <div style="display:flex;flex-direction:row;gap:8px">
+                    <div style="display:flex;flex-direction:row;align-items:center;gap:5px;
+                                background:#18181B;border:1px solid #27272A;border-radius:20px;padding:5px 11px">
+                      <i data-lucide="dollar-sign" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
+                      <span style="font-size:13px;color:#A1A1AA">USD</span>
+                      <i data-lucide="chevron-down" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
+                    </div>
+                    <div style="display:flex;flex-direction:row;align-items:center;gap:5px;
+                                background:#18181B;border:1px solid #27272A;border-radius:20px;padding:5px 11px">
+                      <i data-lucide="layout" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
+                      <span style="font-size:13px;color:#A1A1AA">Modern</span>
+                      <i data-lucide="chevron-down" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Line items -->
+                ${makeItem(200, "Subway tile 4×12 (sqft)", "$900.00")}
+                ${makeItem(8,   "Demo & prep (hrs)",        "$600.00")}
+                ${makeItem(16,  "Tile installation (hrs)",  "$1,360.00")}
+                ${makeItem(6,   "Grouting & sealing (hrs)", "$390.00")}
+
+                <!-- Add Item -->
+                <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;
+                            gap:8px;border:1.5px dashed rgba(79,70,229,0.45);border-radius:12px;
+                            padding:12px;margin-bottom:14px">
+                  <i data-lucide="plus" style="width:18px;height:18px;color:#4F46E5;stroke-width:2.5"></i>
+                  <span style="font-size:14px;font-weight:600;color:#4F46E5">Add Item</span>
+                </div>
+
+                <!-- Total card -->
+                <div style="background:#4F46E5;border-radius:16px;padding:14px 18px;
+                            display:flex;flex-direction:row;justify-content:space-between;align-items:center;
+                            margin-bottom:12px;box-shadow:0 4px 14px rgba(79,70,229,0.35)">
+                  <span style="font-size:16px;font-weight:700;color:#fff">Total</span>
+                  <span style="font-size:26px;font-weight:800;color:#fff">$3,650.00</span>
+                </div>
+
+                <!-- Payment status row -->
+                <div style="display:flex;flex-direction:row;align-items:center;
+                            justify-content:space-between;padding:6px 4px;margin-bottom:8px">
+                  <div style="display:flex;flex-direction:row;align-items:center;gap:8px">
+                    <i data-lucide="credit-card" style="width:18px;height:18px;color:#A1A1AA;stroke-width:2"></i>
+                    <span style="font-size:14px;font-weight:600;color:#FAFAFA">Payment</span>
+                  </div>
+                  <span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;
+                               border:1px solid #EF4444;color:#EF4444;background:rgba(239,68,68,0.08)">Unpaid</span>
+                </div>
+
               </div>
 
-              <!-- AI edit bar -->
+              <!-- AI chat bar -->
               <div class="px-4 pb-4 pt-2 bg-bg border-t border-border">
-                <div class="flex items-center gap-3 bg-surface border border-accent rounded-xl px-4 py-3" style="border-color:rgba(79,70,229,0.4)">
+                <div style="display:flex;align-items:center;gap:12px;background:#18181B;
+                            border:1px solid rgba(79,70,229,0.4);border-radius:12px;padding:12px 14px">
                   <i data-lucide="sparkles" style="width:18px;height:18px;color:#4F46E5;stroke-width:2;flex-shrink:0"></i>
-                  <span class="flex-1 text-text-ter text-[13px]">Bump all labor by 10%...</span>
-                  <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
+                  <span style="flex:1;font-size:13px;color:#71717A">Bump all labor by 10%...</span>
+                  <div style="width:32px;height:32px;background:#4F46E5;border-radius:16px;
+                              display:flex;align-items:center;justify-content:center;flex-shrink:0">
                     <i data-lucide="send" style="width:14px;height:14px;color:#fff;stroke-width:2.5"></i>
                   </div>
                 </div>
@@ -369,107 +424,148 @@
         // ── 4. PREVIEW ──────────────────────────────────────────────────────────
         preview: () => {
           renderTabBar("preview");
+
+          const templates = [
+            {name:"Modern",  color:"#4F46E5", active:true,  isPremium:false, dark:false},
+            {name:"Classic", color:"#10B981", active:false, isPremium:false, dark:false},
+            {name:"Minimal", color:"#F59E0B", active:false, isPremium:false, dark:false},
+            {name:"Premium", color:"#7C3AED", active:false, isPremium:true,  dark:false},
+            {name:"Elegant", color:"#D4AF37", active:false, isPremium:true,  dark:false},
+            {name:"Bold",    color:"#FF3366", active:false, isPremium:true,  dark:false},
+            {name:"Studio",  color:"#0F4C75", active:false, isPremium:true,  dark:false},
+            {name:"Noir",    color:"#00C2CB", active:false, isPremium:true,  dark:true},
+            {name:"Luxe",    color:"#B8860B", active:false, isPremium:true,  dark:false},
+          ];
+
+          const makeThumb = (t) => `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:72px;flex-shrink:0">
+              <div style="width:60px;height:78px;border-radius:6px;overflow:hidden;position:relative;
+                          background:${t.dark ? '#0d0d0d' : '#fff'};
+                          border:${t.active ? '2px solid '+t.color : '1.5px solid #3F3F46'}">
+                <div style="height:16px;background:${t.color};display:flex;align-items:center;padding:0 4px;gap:2px">
+                  <div style="height:2px;width:18px;background:rgba(255,255,255,0.7);border-radius:1px"></div>
+                </div>
+                <div style="padding:3px 4px;display:flex;flex-direction:column;gap:2px">
+                  <div style="height:1px;width:80%;background:${t.dark?'#333':'#e0e0e0'};border-radius:1px"></div>
+                  <div style="height:1px;width:60%;background:${t.dark?'#2a2a2a':'#eee'};border-radius:1px"></div>
+                  <div style="height:0.5px;width:100%;background:${t.dark?'#222':'#f0f0f0'}"></div>
+                  <div style="height:1px;width:75%;background:${t.dark?'#333':'#e0e0e0'};border-radius:1px"></div>
+                  <div style="height:1px;width:55%;background:${t.dark?'#2a2a2a':'#eee'};border-radius:1px"></div>
+                  <div style="height:1px;width:80%;background:${t.dark?'#333':'#e0e0e0'};border-radius:1px"></div>
+                  <div style="height:5px;background:${t.color};border-radius:2px;margin-top:3px;
+                              display:flex;justify-content:flex-end;align-items:center;padding-right:3px">
+                    <span style="font-size:3px;color:#fff;font-weight:700">$8,250</span>
+                  </div>
+                </div>
+                ${t.isPremium ? `
+                  <div style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);
+                               border-radius:3px;padding:1px 3px">
+                    <span style="font-size:5px;font-weight:700;color:#FFD700">PRO</span>
+                  </div>` : ""}
+                ${t.active ? `
+                  <div style="position:absolute;bottom:4px;right:4px;width:14px;height:14px;
+                               border-radius:7px;background:${t.color};
+                               display:flex;align-items:center;justify-content:center">
+                    <i data-lucide="check" style="width:8px;height:8px;color:#fff;stroke-width:3"></i>
+                  </div>` : ""}
+              </div>
+              <span style="font-size:10px;color:${t.active ? '#818CF8' : '#71717A'};
+                           font-weight:${t.active ? 700 : 400};text-align:center">${t.name}</span>
+            </div>`;
+
           return `
             <div class="flex flex-col h-full bg-bg">
 
               <!-- Header -->
-              <div class="flex items-center gap-2 px-4 pt-3 pb-3 bg-bg border-b border-border">
-                <div class="w-9 h-9 rounded-full bg-raised flex items-center justify-center flex-shrink-0">
-                  <i data-lucide="chevron-left" style="width:20px;height:20px;color:#FAFAFA;stroke-width:2.5"></i>
+              <div style="display:flex;align-items:center;padding:10px 8px 10px 4px;border-bottom:1px solid #27272A">
+                <div style="padding:8px">
+                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#FAFAFA;stroke-width:2.5"></i>
                 </div>
-                <span class="flex-1 text-text font-bold text-[16px]">Invoice Preview</span>
-                <div class="flex gap-2">
-                  <div class="w-9 h-9 rounded-full bg-raised flex items-center justify-center">
-                    <i data-lucide="share" style="width:18px;height:18px;color:#A1A1AA;stroke-width:2"></i>
+                <span style="flex:1;font-size:17px;font-weight:700;color:#FAFAFA">Invoice Preview</span>
+                <div style="display:flex;gap:2px">
+                  <div style="padding:8px;border-radius:10px">
+                    <i data-lucide="share" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2"></i>
                   </div>
-                  <div class="w-9 h-9 rounded-full bg-raised flex items-center justify-center">
-                    <i data-lucide="download" style="width:18px;height:18px;color:#A1A1AA;stroke-width:2"></i>
+                  <div style="padding:8px;border-radius:10px">
+                    <i data-lucide="download" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2"></i>
                   </div>
                 </div>
-              </div>
-
-              <!-- Template picker strip -->
-              <div class="flex gap-2 px-4 py-3 border-b border-border overflow-x-auto">
-                ${[
-                  {name:"Modern",  color:"#4F46E5", active:true},
-                  {name:"Classic", color:"#2563EB", active:false},
-                  {name:"Minimal", color:"#52525B", active:false},
-                  {name:"Premium", color:"#7C3AED", active:false},
-                  {name:"Elegant", color:"#D4AF37", active:false},
-                  {name:"Bold",    color:"#E11D48", active:false},
-                ].map(t => `
-                  <div class="flex flex-col items-center gap-1 flex-shrink-0">
-                    <div class="w-9 h-12 rounded-lg flex items-end justify-center pb-1.5 overflow-hidden"
-                         style="background:${t.active ? t.color : '#27272A'};border:2px solid ${t.active ? t.color : '#3F3F46'}">
-                      ${t.active ? `<div class="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center"><i data-lucide="check" style="width:10px;height:10px;color:#fff;stroke-width:3"></i></div>` : ""}
-                    </div>
-                    <span style="font-size:10px;color:${t.active ? '#818CF8' : '#71717A'};font-weight:${t.active ? 700 : 400}">${t.name}</span>
-                  </div>`
-                ).join("")}
               </div>
 
               <!-- Invoice paper -->
-              <div class="flex-1 bg-[#1a1a2e] flex items-start justify-center pt-4 px-3 pb-3 overflow-y-auto">
-                <div class="bg-white w-full rounded-lg shadow-2xl overflow-hidden" style="min-height:620px">
+              <div style="flex:1;background:#1a1a2e;display:flex;align-items:flex-start;
+                          justify-content:center;padding:16px 12px 12px;overflow-y:auto">
+                <div style="background:#fff;width:100%;border-radius:10px;
+                            box-shadow:0 20px 40px rgba(0,0,0,0.5);overflow:hidden;min-height:440px">
 
-                  <!-- Indigo header -->
-                  <div class="px-6 pt-6 pb-5 flex flex-row justify-between items-start" style="background:linear-gradient(135deg,#4F46E5 0%,#3730A3 100%)">
+                  <div style="padding:20px 20px 16px;background:linear-gradient(135deg,#4F46E5,#3730A3);
+                              display:flex;flex-direction:row;justify-content:space-between">
                     <div>
-                      <p class="text-white/70 text-[10px] font-semibold uppercase tracking-widest mb-1">Invoice</p>
-                      <p class="text-white font-bold text-[20px] tracking-tight">Ryan's Electric</p>
-                      <p class="text-white/70 text-[11px] mt-0.5">123 Oak St, Portland OR 97201</p>
-                      <p class="text-white/70 text-[11px]">(503) 555-0190</p>
+                      <p style="color:rgba(255,255,255,0.65);font-size:8px;font-weight:700;
+                                 letter-spacing:0.15em;text-transform:uppercase;margin:0 0 3px">Invoice</p>
+                      <p style="color:#fff;font-size:17px;font-weight:700;margin:0;letter-spacing:-0.3px">Ryan's Electric</p>
+                      <p style="color:rgba(255,255,255,0.65);font-size:10px;margin:2px 0 0">123 Oak St, Portland OR</p>
+                      <p style="color:rgba(255,255,255,0.65);font-size:10px;margin:1px 0 0">(503) 555-0190</p>
                     </div>
-                    <div class="text-right">
-                      <p class="text-white/70 text-[10px] font-semibold tracking-widest">INV-0024</p>
-                      <p class="text-white font-bold text-[13px] mt-1">Jun 27, 2026</p>
-                      <div class="mt-2 bg-white/20 rounded-full px-3 py-1">
-                        <span class="text-white text-[11px] font-bold">DUE Jul 11</span>
+                    <div style="text-align:right">
+                      <p style="color:rgba(255,255,255,0.65);font-size:9px;font-weight:600;
+                                 letter-spacing:0.1em;margin:0">INV-0024</p>
+                      <p style="color:#fff;font-size:11px;font-weight:600;margin:4px 0 0">Jun 27, 2026</p>
+                      <div style="margin-top:6px;background:rgba(255,255,255,0.2);border-radius:9999px;
+                                  padding:3px 10px;display:inline-block">
+                        <span style="color:#fff;font-size:10px;font-weight:700">DUE Jul 11</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Bill To -->
-                  <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Bill To</p>
-                    <p class="text-gray-900 font-semibold text-[13px]">James Wilson</p>
-                    <p class="text-gray-500 text-[11px]">Maple Street Properties</p>
-                    <p class="text-gray-500 text-[11px]">45 Maple St, Portland OR 97204</p>
+                  <div style="padding:10px 20px;background:#f8f8f8;border-bottom:1px solid #eee">
+                    <p style="font-size:8px;font-weight:700;color:#aaa;letter-spacing:0.15em;
+                               text-transform:uppercase;margin:0 0 3px">Bill To</p>
+                    <p style="font-size:12px;font-weight:600;color:#111;margin:0">James Wilson</p>
+                    <p style="font-size:10px;color:#666;margin:2px 0 0">45 Maple St, Portland OR</p>
                   </div>
 
-                  <!-- Items table header -->
-                  <div class="px-6 pt-4">
-                    <div class="flex flex-row pb-2 border-b-2" style="border-color:#4F46E5">
-                      <span class="flex-1 text-[9px] font-bold uppercase tracking-wider text-gray-400">Description</span>
-                      <span class="w-10 text-right text-[9px] font-bold uppercase tracking-wider text-gray-400">Qty</span>
-                      <span class="w-14 text-right text-[9px] font-bold uppercase tracking-wider text-gray-400">Rate</span>
-                      <span class="w-16 text-right text-[9px] font-bold uppercase tracking-wider text-gray-400">Amount</span>
+                  <div style="padding:12px 20px 0">
+                    <div style="display:flex;flex-direction:row;padding-bottom:6px;
+                                border-bottom:2px solid #4F46E5">
+                      <span style="flex:1;font-size:8px;font-weight:700;color:#aaa;
+                                   text-transform:uppercase;letter-spacing:0.1em">Description</span>
+                      <span style="width:36px;text-align:right;font-size:8px;font-weight:700;color:#aaa;
+                                   text-transform:uppercase;letter-spacing:0.1em">Qty</span>
+                      <span style="width:48px;text-align:right;font-size:8px;font-weight:700;color:#aaa;
+                                   text-transform:uppercase;letter-spacing:0.1em">Rate</span>
+                      <span style="width:52px;text-align:right;font-size:8px;font-weight:700;color:#aaa;
+                                   text-transform:uppercase;letter-spacing:0.1em">Amt</span>
                     </div>
-
                     ${[
-                      {name:"Subway tile 4×12",    group:"Materials", qty:"200 sqft", rate:"$4.50",  amt:"$900.00"},
-                      {name:"Cement board",         group:"",          qty:"50 sheets",rate:"$8.00",  amt:"$400.00"},
-                      {name:"Demo & prep",          group:"Labor",     qty:"8 hrs",   rate:"$75.00", amt:"$600.00"},
-                      {name:"Tile installation",    group:"",          qty:"16 hrs",  rate:"$85.00", amt:"$1,360.00"},
-                      {name:"Grouting & sealing",   group:"",          qty:"6 hrs",   rate:"$65.00", amt:"$390.00"},
-                      {name:"Permit fee",           group:"Fees",      qty:"1",       rate:"$150.00",amt:"$150.00"},
-                      {name:"Disposal",             group:"",          qty:"1",       rate:"$130.00",amt:"$130.00"},
-                    ].map(row => `
-                      ${row.group ? `<p class="text-[8px] font-bold uppercase tracking-wider mt-3 mb-1" style="color:#4F46E5">${row.group}</p>` : ""}
-                      <div class="flex flex-row items-baseline py-1.5 border-b border-gray-50">
-                        <span class="flex-1 text-gray-700 text-[11px]">${row.name}</span>
-                        <span class="w-10 text-right text-gray-500 text-[10px]">${row.qty}</span>
-                        <span class="w-14 text-right text-gray-500 text-[10px]">${row.rate}</span>
-                        <span class="w-16 text-right text-gray-900 font-medium text-[11px]">${row.amt}</span>
-                      </div>`
-                    ).join("")}
+                      {name:"Subway tile 4×12", g:"Materials", qty:"200 sqft", rate:"$4.50",  amt:"$900"},
+                      {name:"Demo & prep",       g:"Labor",    qty:"8 hrs",    rate:"$75.00", amt:"$600"},
+                      {name:"Tile install",      g:"",         qty:"16 hrs",   rate:"$85.00", amt:"$1,360"},
+                      {name:"Permit fee",        g:"Fees",     qty:"1",        rate:"$150",   amt:"$150"},
+                    ].map(r => `
+                      ${r.g ? `<p style="font-size:7px;font-weight:700;color:#4F46E5;text-transform:uppercase;
+                                         letter-spacing:0.1em;margin:6px 0 2px">${r.g}</p>` : ""}
+                      <div style="display:flex;flex-direction:row;align-items:baseline;
+                                  padding:5px 0;border-bottom:1px solid #f5f5f5">
+                        <span style="flex:1;font-size:10px;color:#444">${r.name}</span>
+                        <span style="width:36px;text-align:right;font-size:9px;color:#888">${r.qty}</span>
+                        <span style="width:48px;text-align:right;font-size:9px;color:#888">${r.rate}</span>
+                        <span style="width:52px;text-align:right;font-size:10px;font-weight:600;color:#111">${r.amt}</span>
+                      </div>`).join("")}
                   </div>
 
-                  <!-- Total -->
-                  <div class="mx-6 mt-4 mb-6 rounded-xl px-4 py-3 flex justify-between items-center" style="background:#4F46E5">
-                    <span class="text-white font-bold text-[14px]">Total Due</span>
-                    <span class="text-white font-bold text-[20px]">$3,650.00</span>
+                  <div style="margin:10px 20px 16px;background:#4F46E5;border-radius:10px;
+                              padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+                    <span style="color:#fff;font-weight:700;font-size:13px">Total Due</span>
+                    <span style="color:#fff;font-weight:800;font-size:17px">$3,650.00</span>
                   </div>
+                </div>
+              </div>
+
+              <!-- Template strip at bottom -->
+              <div style="border-top:1px solid #27272A;background:#09090B">
+                <div style="display:flex;flex-direction:row;gap:10px;padding:10px 14px;overflow-x:auto;scrollbar-width:none">
+                  ${templates.map(makeThumb).join("")}
                 </div>
               </div>
             </div>`;
@@ -479,104 +575,118 @@
         settings: () => {
           renderTabBar("profile");
 
-          const makeField = (icon, label, value) => `
-            <div class="mb-4">
-              <label style="font-size:12px;font-weight:600;color:#A1A1AA;display:block;margin-bottom:6px">${label}</label>
-              <div class="flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-3">
-                <i data-lucide="${icon}" style="width:17px;height:17px;color:#71717A;stroke-width:2;flex-shrink:0"></i>
-                <span style="font-size:14px;color:#FAFAFA">${value}</span>
+          const makeThumb = (name, color, active, isPremium) => `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+              <div style="width:100%;border-radius:12px;overflow:hidden;position:relative;
+                          border:${active ? '2px solid '+color : '1.5px solid #3F3F46'};
+                          background:${active ? color+'18' : '#27272A'}">
+                <div style="height:52px;padding:6px;display:flex;flex-direction:column;gap:2.5px">
+                  <div style="height:7px;background:${color};border-radius:3px;width:55%"></div>
+                  <div style="height:1.5px;background:${active?'rgba(255,255,255,0.3)':'#3a3a3a'};
+                               border-radius:1px;width:80%"></div>
+                  <div style="height:1px;background:${active?'rgba(255,255,255,0.2)':'#333'};
+                               border-radius:1px;width:65%"></div>
+                  <div style="height:1px;background:${active?'rgba(255,255,255,0.2)':'#333'};
+                               border-radius:1px;width:75%"></div>
+                  <div style="margin-top:2px;height:6px;background:${color};border-radius:3px;
+                               display:flex;justify-content:flex-end;align-items:center;padding-right:3px">
+                    <span style="font-size:3.5px;color:#fff;font-weight:700">$8,250</span>
+                  </div>
+                </div>
+                ${isPremium ? `
+                  <div style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.65);
+                               border-radius:3px;padding:1.5px 4px;display:flex;align-items:center;gap:1px">
+                    <span style="font-size:6px;font-weight:700;color:#FFD700">PRO</span>
+                  </div>` : ""}
+                ${active ? `
+                  <div style="position:absolute;bottom:4px;right:4px;width:15px;height:15px;
+                               border-radius:8px;background:${color};
+                               display:flex;align-items:center;justify-content:center">
+                    <i data-lucide="check" style="width:9px;height:9px;color:#fff;stroke-width:3"></i>
+                  </div>` : ""}
               </div>
+              <span style="font-size:11px;color:${active ? color : '#71717A'};
+                           font-weight:${active ? 700 : 400};text-align:center">${name}</span>
             </div>`;
+
+          const PRESET_COLORS = ["#4F46E5","#10B981","#F59E0B","#EF4444","#7C3AED","#EC4899","#0F4C75","#D4AF37"];
 
           return `
             <div class="flex flex-col h-full bg-bg">
-              <!-- Header -->
-              <div class="flex items-center gap-3 px-5 pt-4 pb-4 bg-bg border-b border-border">
-                <div class="w-9 h-9 rounded-full bg-raised flex items-center justify-center flex-shrink-0">
-                  <i data-lucide="chevron-left" style="width:20px;height:20px;color:#FAFAFA;stroke-width:2.5"></i>
+
+              <!-- Header (nav) -->
+              <div style="display:flex;align-items:center;gap:8px;
+                          padding:10px 16px 10px 4px;border-bottom:1px solid #27272A">
+                <div style="padding:8px">
+                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#FAFAFA;stroke-width:2.5"></i>
                 </div>
-                <h1 class="text-text font-bold text-[18px]">Business Settings</h1>
+                <div>
+                  <h1 style="font-size:20px;font-weight:700;color:#FAFAFA;margin:0">Template Settings</h1>
+                </div>
               </div>
 
-              <div class="flex-1 overflow-y-auto px-5 pt-5 pb-4 space-y-6">
+              <!-- Scrollable content -->
+              <div style="flex:1;overflow-y:auto;padding:16px 20px 20px;display:flex;flex-direction:column;gap:22px">
 
-                <!-- Logo -->
-                <div class="flex flex-col items-center">
-                  <div class="w-20 h-20 rounded-2xl bg-raised border-2 border-dashed border-border-sub flex items-center justify-center relative">
-                    <i data-lucide="image" style="width:28px;height:28px;color:#52525B;stroke-width:1.5"></i>
-                    <div class="absolute -bottom-2 -right-2 w-7 h-7 bg-accent rounded-full flex items-center justify-center border-2 border-bg">
-                      <i data-lucide="camera" style="width:13px;height:13px;color:#fff;stroke-width:2.5"></i>
-                    </div>
-                  </div>
-                  <p class="text-text-ter text-[12px] mt-3">Tap to add company logo</p>
-                </div>
-
-                <!-- Business info -->
+                <!-- Invoice Template -->
                 <div>
-                  <p class="text-text font-semibold text-[15px] mb-4">Business Info</p>
-                  ${makeField("building-2",  "Company Name", "Ryan's Electric")}
-                  ${makeField("map-pin",      "Address",      "123 Oak St, Portland OR 97201")}
-                  ${makeField("phone",        "Phone",        "(503) 555-0190")}
-                  ${makeField("mail",         "Email",        "ryan@ryanselectric.com")}
-                </div>
-
-                <!-- Template picker -->
-                <div>
-                  <p class="text-text font-semibold text-[15px] mb-3">Invoice Template</p>
-                  <div class="grid grid-cols-3 gap-3">
+                  <p style="font-size:15px;font-weight:600;color:#FAFAFA;margin:0 0 12px">Invoice Template</p>
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
                     ${[
-                      {name:"Modern",  color:"#4F46E5", active:true},
-                      {name:"Classic", color:"#2563EB", active:false},
-                      {name:"Minimal", color:"#52525B", active:false},
-                      {name:"Premium", color:"#7C3AED", active:false},
-                      {name:"Elegant", color:"#D4AF37", active:false},
-                      {name:"Bold",    color:"#E11D48", active:false},
-                    ].map(t => `
-                      <div class="flex flex-col items-center gap-2">
-                        <div class="w-full h-16 rounded-xl relative overflow-hidden flex items-center justify-center"
-                             style="background:${t.active ? t.color : '#27272A'};border:2px solid ${t.active ? t.color : '#3F3F46'}">
-                          <div class="absolute inset-0 flex flex-col p-2 gap-1">
-                            <div class="h-2 rounded-sm" style="background:${t.active ? 'rgba(255,255,255,0.4)' : '#3F3F46'};width:60%"></div>
-                            <div class="h-1 rounded-sm" style="background:${t.active ? 'rgba(255,255,255,0.2)' : '#3F3F46'};width:90%"></div>
-                            <div class="h-1 rounded-sm" style="background:${t.active ? 'rgba(255,255,255,0.2)' : '#3F3F46'};width:75%"></div>
-                          </div>
-                          ${t.active ? `
-                          <div class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
-                            <i data-lucide="check" style="width:11px;height:11px;color:#fff;stroke-width:3"></i>
-                          </div>` : ""}
-                        </div>
-                        <span style="font-size:11px;color:${t.active ? '#818CF8' : '#71717A'};font-weight:${t.active ? 700 : 400}">${t.name}</span>
-                      </div>`
-                    ).join("")}
+                      {name:"Premium", color:"#7C3AED", active:false, isPremium:true},
+                      {name:"Elegant", color:"#D4AF37", active:false, isPremium:true},
+                      {name:"Bold",    color:"#FF3366", active:false, isPremium:true},
+                      {name:"Studio",  color:"#0F4C75", active:false, isPremium:true},
+                      {name:"Noir",    color:"#00C2CB", active:false, isPremium:true},
+                      {name:"Luxe",    color:"#B8860B", active:false, isPremium:true},
+                      {name:"Modern",  color:"#4F46E5", active:true,  isPremium:false},
+                      {name:"Classic", color:"#10B981", active:false, isPremium:false},
+                      {name:"Minimal", color:"#F59E0B", active:false, isPremium:false},
+                    ].map(t => makeThumb(t.name, t.color, t.active, t.isPremium)).join("")}
                   </div>
                 </div>
 
-                <!-- Currency -->
+                <!-- Theme Color -->
                 <div>
-                  <p class="text-text font-semibold text-[15px] mb-3">Currency</p>
-                  <div class="flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-3">
-                    <i data-lucide="dollar-sign" style="width:17px;height:17px;color:#71717A;stroke-width:2"></i>
-                    <span class="flex-1 text-text text-[14px]">USD — US Dollar</span>
+                  <p style="font-size:15px;font-weight:600;color:#FAFAFA;margin:0 0 4px">Theme Color</p>
+                  <p style="font-size:13px;color:#71717A;margin:0 0 12px">Choose a primary color for your invoice elements.</p>
+                  <div style="display:flex;flex-direction:row;gap:10px;flex-wrap:wrap">
+                    ${PRESET_COLORS.map((c, i) => `
+                      <div style="width:36px;height:36px;border-radius:18px;background:${c};
+                                  display:flex;align-items:center;justify-content:center;
+                                  ${i===0 ? 'box-shadow:0 0 0 3px #09090B,0 0 0 5px '+c : ''}">
+                        ${i===0 ? `<i data-lucide="check" style="width:16px;height:16px;color:#fff;stroke-width:2.5"></i>` : ""}
+                      </div>`).join("")}
+                  </div>
+                </div>
+
+                <!-- Business Details -->
+                <div>
+                  <p style="font-size:15px;font-weight:600;color:#FAFAFA;margin:0 0 12px">Business Details</p>
+                  ${[
+                    {icon:"building-2", val:"Ryan's Electric"},
+                    {icon:"map-pin",    val:"123 Oak St, Portland OR"},
+                    {icon:"phone",      val:"(503) 555-0190"},
+                    {icon:"mail",       val:"ryan@ryanselectric.com"},
+                  ].map(f => `
+                    <div style="display:flex;align-items:center;gap:12px;background:#18181B;
+                                border:1px solid #27272A;border-radius:12px;padding:11px 14px;margin-bottom:8px">
+                      <i data-lucide="${f.icon}" style="width:20px;height:20px;color:#71717A;stroke-width:2;flex-shrink:0"></i>
+                      <span style="font-size:14px;color:#FAFAFA">${f.val}</span>
+                    </div>`).join("")}
+                  <div style="display:flex;align-items:center;gap:12px;background:#18181B;
+                              border:1px solid #27272A;border-radius:12px;padding:11px 14px">
+                    <i data-lucide="dollar-sign" style="width:20px;height:20px;color:#71717A;stroke-width:2;flex-shrink:0"></i>
+                    <span style="flex:1;font-size:14px;color:#FAFAFA">USD</span>
                     <i data-lucide="chevron-right" style="width:16px;height:16px;color:#52525B;stroke-width:2"></i>
                   </div>
                 </div>
 
-                <!-- Signature -->
-                <div>
-                  <p class="text-text font-semibold text-[15px] mb-3">Signature</p>
-                  <div class="bg-surface border border-dashed border-border-sub rounded-xl px-4 py-5 flex flex-col items-center gap-2">
-                    <i data-lucide="pen-tool" style="width:24px;height:24px;color:#52525B;stroke-width:1.5"></i>
-                    <span class="text-text-ter text-[12px]">No signature added</span>
-                    <div class="mt-1 bg-raised border border-border rounded-full px-4 py-1.5">
-                      <span style="color:#818CF8;font-size:13px;font-weight:600">+ Add Signature</span>
-                    </div>
-                  </div>
-                </div>
-
                 <!-- Save button -->
-                <div class="bg-accent rounded-2xl py-4 flex items-center justify-center gap-2">
+                <div style="background:#4F46E5;border-radius:16px;padding:14px 20px;
+                            display:flex;align-items:center;justify-content:center;gap:8px">
                   <i data-lucide="check" style="width:20px;height:20px;color:#fff;stroke-width:2.5"></i>
-                  <span class="text-white font-bold text-[16px]">Save Settings</span>
+                  <span style="color:#fff;font-weight:700;font-size:16px">Save Changes</span>
                 </div>
 
               </div>
