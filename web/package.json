@@ -7,7 +7,8 @@
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate-og": "node scripts/generate-og.js"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "puppeteer": "^24.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

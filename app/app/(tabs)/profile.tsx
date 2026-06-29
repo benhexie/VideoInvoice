@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image, ActivityIndicator, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../context/AuthContext";
@@ -16,6 +16,7 @@ import {
   Moon,
   Crown,
   Camera,
+  Share2,
 } from "lucide-react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemePreference } from "@/context/ThemeContext";
@@ -40,6 +41,19 @@ export default function ProfileScreen() {
   const { colors, preference, setPreference } = useTheme();
   const styles = createStyles(colors);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        title: "VideoInvoice",
+        message:
+          "Create professional invoices from videos in seconds! Check out VideoInvoice — the AI estimator for contractors. https://videoinvoice.app",
+        url: "https://videoinvoice.app",
+      });
+    } catch (error: any) {
+      Alert.alert("Share Error", error.message);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -161,6 +175,14 @@ export default function ProfileScreen() {
             <Shield color={colors.success} size={20} />
           </View>
           <Text style={styles.menuText}>Privacy & Security</Text>
+          <ChevronRight color={colors.textDisabled} size={20} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem} onPress={handleShare}>
+          <View style={[styles.menuIcon, { backgroundColor: "rgba(14,165,233,0.12)" }]}>
+            <Share2 color="#0EA5E9" size={20} />
+          </View>
+          <Text style={styles.menuText}>Share VideoInvoice</Text>
           <ChevronRight color={colors.textDisabled} size={20} />
         </TouchableOpacity>
       </View>
