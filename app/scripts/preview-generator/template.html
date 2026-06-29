@@ -11,22 +11,22 @@
         theme: {
           extend: {
             colors: {
-              bg:            "#09090B",
-              surface:       "#18181B",
-              raised:        "#27272A",
-              border:        "#27272A",
-              "border-sub":  "#3F3F46",
-              text:          "#FAFAFA",
-              "text-sec":    "#A1A1AA",
-              "text-ter":    "#71717A",
+              bg:            "#FAFAFA",
+              surface:       "#FFFFFF",
+              raised:        "#F4F4F5",
+              border:        "#E4E4E7",
+              "border-sub":  "#D4D4D8",
+              text:          "#09090B",
+              "text-sec":    "#71717A",
+              "text-ter":    "#A1A1AA",
               accent:        "#4F46E5",
-              "accent-l":    "#818CF8",
-              "accent-sub":  "rgba(79,70,229,0.15)",
-              success:       "#10B981",
-              "success-sub": "rgba(16,185,129,0.10)",
-              error:         "#EF4444",
-              "error-sub":   "rgba(239,68,68,0.08)",
-              warning:       "#F59E0B",
+              "accent-l":    "#6366F1",
+              "accent-sub":  "rgba(79,70,229,0.10)",
+              success:       "#059669",
+              "success-sub": "rgba(16,185,129,0.08)",
+              error:         "#DC2626",
+              "error-sub":   "rgba(239,68,68,0.06)",
+              warning:       "#D97706",
             },
             fontFamily: {
               sans: ["-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "Roboto", "Helvetica", "Arial", "sans-serif"],
@@ -37,7 +37,7 @@
     </script>
     <style>
       body {
-        background-color: #1a1a2e;
+        background-color: #c8cde0;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -49,10 +49,10 @@
       #device-frame {
         width: 414px;
         height: 896px;
-        background-color: #09090B;
+        background-color: #FAFAFA;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
       }
     </style>
   </head>
@@ -74,7 +74,7 @@
 
       <!-- Tab Bar -->
       <div id="tab-bar"
-           class="h-[73px] bg-bg border-t border-border flex flex-row justify-around items-start pt-3 absolute bottom-0 w-full z-50">
+           class="h-[73px] bg-surface border-t border-border flex flex-row justify-around items-start pt-3 absolute bottom-0 w-full z-50">
       </div>
     </div>
 
@@ -92,7 +92,7 @@
         ];
         tabBar.innerHTML = tabs.map((tab) => {
           const isActive = tab.id === activeTab;
-          const color = isActive ? "#4F46E5" : "#71717A";
+          const color = isActive ? "#4F46E5" : "#A1A1AA";
           return `
             <div class="flex flex-col items-center gap-1 w-20">
               <i data-lucide="${tab.icon}" style="color:${color};width:24px;height:24px;stroke-width:${isActive ? 2.5 : 2}"></i>
@@ -121,8 +121,8 @@
 
               <!-- Top bar -->
               <div class="flex justify-between items-center px-5 pt-3 pb-3 bg-bg">
-                <img src="../../assets/images/logo-white.png" style="height:20px;width:auto;object-fit:contain" alt="VideoInvoice" />
-                <div class="flex items-center gap-1.5 bg-raised border border-border rounded-full px-3 py-1.5">
+                <img src="../../assets/images/logo-black.png" style="height:20px;width:auto;object-fit:contain" alt="VideoInvoice" />
+                <div class="flex items-center gap-1.5 bg-surface border border-border rounded-full px-3 py-1.5">
                   <i data-lucide="dollar-sign" style="width:14px;height:14px;color:#4F46E5;stroke-width:2.5"></i>
                   <span class="text-text text-[13px] font-semibold">USD</span>
                 </div>
@@ -134,13 +134,13 @@
                   <i data-lucide="video" style="width:14px;height:14px;color:#fff;stroke-width:2.5"></i>
                   <span class="text-white text-[13px] font-semibold">Video</span>
                 </div>
-                <div class="flex items-center gap-1.5 bg-raised border border-border rounded-full px-4 py-2">
+                <div class="flex items-center gap-1.5 bg-surface border border-border rounded-full px-4 py-2">
                   <i data-lucide="type" style="width:14px;height:14px;color:#A1A1AA;stroke-width:2"></i>
-                  <span class="text-text-sec text-[13px] font-medium">Text</span>
+                  <span class="text-text-ter text-[13px] font-medium">Text</span>
                 </div>
-                <div class="flex items-center gap-1.5 bg-raised border border-border rounded-full px-4 py-2">
+                <div class="flex items-center gap-1.5 bg-surface border border-border rounded-full px-4 py-2">
                   <i data-lucide="paperclip" style="width:14px;height:14px;color:#A1A1AA;stroke-width:2"></i>
-                  <span class="text-text-sec text-[13px] font-medium">Document</span>
+                  <span class="text-text-ter text-[13px] font-medium">Document</span>
                 </div>
               </div>
 
@@ -182,14 +182,14 @@
 
               <!-- Price list chips -->
               <div class="px-5 pt-4 pb-2 bg-bg flex items-center gap-2">
-                <div class="flex items-center gap-2 bg-raised border border-border-sub rounded-full px-3 py-1.5">
-                  <i data-lucide="file-text" style="width:13px;height:13px;color:#71717A;stroke-width:2"></i>
+                <div class="flex items-center gap-2 bg-surface border border-border rounded-full px-3 py-1.5">
+                  <i data-lucide="file-text" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
                   <span class="text-text-ter text-[12px]">No price list</span>
                 </div>
                 <div class="flex items-center gap-2 rounded-full px-3 py-1.5"
-                     style="background:rgba(79,70,229,0.18);border:1px solid rgba(99,102,241,0.55)">
-                  <i data-lucide="plus" style="width:13px;height:13px;color:#818CF8;stroke-width:2"></i>
-                  <span style="color:#818CF8;font-size:12px;font-weight:600">Add price list</span>
+                     style="background:rgba(79,70,229,0.10);border:1px solid rgba(79,70,229,0.4)">
+                  <i data-lucide="plus" style="width:13px;height:13px;color:#4F46E5;stroke-width:2"></i>
+                  <span style="color:#4F46E5;font-size:12px;font-weight:600">Add price list</span>
                 </div>
               </div>
             </div>`;
@@ -200,33 +200,33 @@
           renderTabBar("invoices");
 
           const makeCard = ({ name, date, total, status, statusColor, statusBg, statusBorder, currency }) => `
-            <div style="background:#18181B;border:1px solid #27272A;border-radius:20px;overflow:hidden;
+            <div style="background:#FFFFFF;border:1px solid #E4E4E7;border-radius:20px;overflow:hidden;
                         display:flex;flex-direction:row;margin-bottom:12px;
-                        box-shadow:0 4px 10px rgba(0,0,0,0.12)">
+                        box-shadow:0 2px 8px rgba(0,0,0,0.06)">
               <div style="width:3px;background:#4F46E5;flex-shrink:0"></div>
               <div style="flex:1;padding:16px 15px">
                 <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center;margin-bottom:11px">
                   <div style="display:flex;flex-direction:row;align-items:center">
-                    <div style="width:42px;height:42px;border-radius:13px;background:rgba(79,70,229,0.15);
+                    <div style="width:42px;height:42px;border-radius:13px;background:rgba(79,70,229,0.10);
                                 display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                      <i data-lucide="file-text" style="width:20px;height:20px;color:#818CF8;stroke-width:2"></i>
+                      <i data-lucide="file-text" style="width:20px;height:20px;color:#6366F1;stroke-width:2"></i>
                     </div>
-                    <div style="margin-left:10px;background:rgba(34,197,94,0.12);
-                                border:1px solid rgba(34,197,94,0.2);padding:3px 10px;border-radius:12px">
-                      <span style="color:#4ADE80;font-size:12px;font-weight:600;letter-spacing:0.5px">Invoice</span>
+                    <div style="margin-left:10px;background:rgba(5,150,105,0.08);
+                                border:1px solid rgba(5,150,105,0.2);padding:3px 10px;border-radius:12px">
+                      <span style="color:#059669;font-size:12px;font-weight:600;letter-spacing:0.5px">Invoice</span>
                     </div>
                   </div>
-                  <div style="width:34px;height:34px;border-radius:17px;background:rgba(239,68,68,0.08);
+                  <div style="width:34px;height:34px;border-radius:17px;background:rgba(220,38,38,0.06);
                               display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <i data-lucide="trash-2" style="width:16px;height:16px;color:#EF4444;stroke-width:2"></i>
+                    <i data-lucide="trash-2" style="width:16px;height:16px;color:#DC2626;stroke-width:2"></i>
                   </div>
                 </div>
-                <p style="font-size:17px;font-weight:700;color:#FAFAFA;margin-bottom:10px;
+                <p style="font-size:17px;font-weight:700;color:#09090B;margin-bottom:10px;
                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.2px">${name}</p>
                 <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center">
-                  <span style="font-size:13px;color:#71717A;font-weight:500">${date}</span>
+                  <span style="font-size:13px;color:#A1A1AA;font-weight:500">${date}</span>
                   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-                    <span style="font-size:22px;font-weight:800;color:#FAFAFA;letter-spacing:-0.5px">${currency}${total}</span>
+                    <span style="font-size:22px;font-weight:800;color:#09090B;letter-spacing:-0.5px">${currency}${total}</span>
                     <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;
                                  border:1px solid ${statusBorder};color:${statusColor};background:${statusBg}">${status}</span>
                   </div>
@@ -239,8 +239,8 @@
 
               <!-- Header -->
               <div style="padding:20px 24px 14px">
-                <h1 style="font-size:32px;font-weight:700;color:#FAFAFA;letter-spacing:-0.5px;margin:0">Invoices</h1>
-                <p style="font-size:15px;color:#71717A;margin-top:4px">Your generated quotes</p>
+                <h1 style="font-size:32px;font-weight:700;color:#09090B;letter-spacing:-0.5px;margin:0">Invoices</h1>
+                <p style="font-size:15px;color:#A1A1AA;margin-top:4px">Your generated quotes</p>
               </div>
 
               <!-- Filter pills -->
@@ -253,42 +253,42 @@
                     <span style="font-size:10px;font-weight:700;color:#fff">5</span>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:6px;background:#27272A;border:1.5px solid #27272A;
+                <div style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1.5px solid #E4E4E7;
                             border-radius:9999px;padding:5px 12px;flex-shrink:0">
-                  <div style="width:8px;height:8px;border-radius:4px;background:#EF4444"></div>
-                  <span style="color:#A1A1AA;font-size:13px;font-weight:600">Unpaid</span>
-                  <div style="min-width:18px;height:18px;border-radius:9px;background:#1e1e1e;
+                  <div style="width:8px;height:8px;border-radius:4px;background:#DC2626"></div>
+                  <span style="color:#71717A;font-size:13px;font-weight:600">Unpaid</span>
+                  <div style="min-width:18px;height:18px;border-radius:9px;background:#F4F4F5;
                               display:flex;align-items:center;justify-content:center;padding:0 4px">
-                    <span style="font-size:10px;font-weight:700;color:#A1A1AA">2</span>
+                    <span style="font-size:10px;font-weight:700;color:#71717A">2</span>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:6px;background:#27272A;border:1.5px solid #27272A;
+                <div style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1.5px solid #E4E4E7;
                             border-radius:9999px;padding:5px 12px;flex-shrink:0">
-                  <div style="width:8px;height:8px;border-radius:4px;background:#F59E0B"></div>
-                  <span style="color:#A1A1AA;font-size:13px;font-weight:600">Partial</span>
-                  <div style="min-width:18px;height:18px;border-radius:9px;background:#1e1e1e;
+                  <div style="width:8px;height:8px;border-radius:4px;background:#D97706"></div>
+                  <span style="color:#71717A;font-size:13px;font-weight:600">Partial</span>
+                  <div style="min-width:18px;height:18px;border-radius:9px;background:#F4F4F5;
                               display:flex;align-items:center;justify-content:center;padding:0 4px">
-                    <span style="font-size:10px;font-weight:700;color:#A1A1AA">1</span>
+                    <span style="font-size:10px;font-weight:700;color:#71717A">1</span>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:6px;background:#27272A;border:1.5px solid #27272A;
+                <div style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1.5px solid #E4E4E7;
                             border-radius:9999px;padding:5px 12px;flex-shrink:0">
-                  <div style="width:8px;height:8px;border-radius:4px;background:#10B981"></div>
-                  <span style="color:#A1A1AA;font-size:13px;font-weight:600">Paid</span>
-                  <div style="min-width:18px;height:18px;border-radius:9px;background:#1e1e1e;
+                  <div style="width:8px;height:8px;border-radius:4px;background:#059669"></div>
+                  <span style="color:#71717A;font-size:13px;font-weight:600">Paid</span>
+                  <div style="min-width:18px;height:18px;border-radius:9px;background:#F4F4F5;
                               display:flex;align-items:center;justify-content:center;padding:0 4px">
-                    <span style="font-size:10px;font-weight:700;color:#A1A1AA">2</span>
+                    <span style="font-size:10px;font-weight:700;color:#71717A">2</span>
                   </div>
                 </div>
               </div>
 
               <!-- Invoice list -->
               <div style="flex:1;overflow-y:auto;padding:4px 16px 16px">
-                ${makeCard({ name:"Bathroom Remodel",   date:"Jun 27, 2026", total:"3,840.00", currency:"$", status:"Unpaid",  statusColor:"#EF4444", statusBg:"rgba(239,68,68,0.08)",  statusBorder:"#EF4444" })}
-                ${makeCard({ name:"Kitchen Renovation", date:"Jun 22, 2026", total:"12,500.00",currency:"$", status:"Partial", statusColor:"#F59E0B", statusBg:"rgba(245,158,11,0.10)", statusBorder:"#F59E0B" })}
-                ${makeCard({ name:"HVAC Installation",  date:"Jun 15, 2026", total:"2,200.00", currency:"$", status:"Paid",    statusColor:"#10B981", statusBg:"rgba(16,185,129,0.08)", statusBorder:"#10B981" })}
-                ${makeCard({ name:"Deck Replacement",   date:"Jun 10, 2026", total:"4,650.00", currency:"$", status:"Unpaid",  statusColor:"#EF4444", statusBg:"rgba(239,68,68,0.08)",  statusBorder:"#EF4444" })}
-                ${makeCard({ name:"Drywall & Painting", date:"Jun 4, 2026",  total:"1,900.00", currency:"$", status:"Paid",    statusColor:"#10B981", statusBg:"rgba(16,185,129,0.08)", statusBorder:"#10B981" })}
+                ${makeCard({ name:"Bathroom Remodel",   date:"Jun 27, 2026", total:"3,840.00", currency:"$", status:"Unpaid",  statusColor:"#DC2626", statusBg:"rgba(220,38,38,0.06)",  statusBorder:"#DC2626" })}
+                ${makeCard({ name:"Kitchen Renovation", date:"Jun 22, 2026", total:"12,500.00",currency:"$", status:"Partial", statusColor:"#D97706", statusBg:"rgba(217,119,6,0.08)",  statusBorder:"#D97706" })}
+                ${makeCard({ name:"HVAC Installation",  date:"Jun 15, 2026", total:"2,200.00", currency:"$", status:"Paid",    statusColor:"#059669", statusBg:"rgba(5,150,105,0.08)",  statusBorder:"#059669" })}
+                ${makeCard({ name:"Deck Replacement",   date:"Jun 10, 2026", total:"4,650.00", currency:"$", status:"Unpaid",  statusColor:"#DC2626", statusBg:"rgba(220,38,38,0.06)",  statusBorder:"#DC2626" })}
+                ${makeCard({ name:"Drywall & Painting", date:"Jun 4, 2026",  total:"1,900.00", currency:"$", status:"Paid",    statusColor:"#059669", statusBg:"rgba(5,150,105,0.08)",  statusBorder:"#059669" })}
               </div>
             </div>`;
         },
@@ -298,19 +298,20 @@
           renderTabBar("detail");
 
           const makeItem = (qty, desc, price) => `
-            <div style="background:#18181B;border-radius:16px;padding:13px 15px;margin-bottom:8px;
-                        display:flex;flex-direction:row;align-items:center">
+            <div style="background:#FFFFFF;border-radius:16px;padding:13px 15px;margin-bottom:8px;
+                        display:flex;flex-direction:row;align-items:center;
+                        box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #E4E4E7">
               <div style="flex:1">
                 <div style="margin-bottom:5px">
-                  <span style="background:rgba(79,70,229,0.15);border-radius:8px;padding:2px 8px;
-                               font-size:11px;font-weight:700;color:#818CF8">${qty}x</span>
+                  <span style="background:rgba(79,70,229,0.10);border-radius:8px;padding:2px 8px;
+                               font-size:11px;font-weight:700;color:#4F46E5">${qty}x</span>
                 </div>
-                <p style="font-size:14px;color:#FAFAFA;margin:0">${desc}</p>
+                <p style="font-size:14px;color:#09090B;margin:0">${desc}</p>
               </div>
               <div style="display:flex;flex-direction:row;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
-                <span style="font-size:15px;font-weight:700;color:#FAFAFA">${price}</span>
+                <span style="font-size:15px;font-weight:700;color:#09090B">${price}</span>
                 <i data-lucide="edit-2" style="width:15px;height:15px;color:#A1A1AA;stroke-width:2"></i>
-                <i data-lucide="trash-2" style="width:14px;height:14px;color:#EF4444;stroke-width:2"></i>
+                <i data-lucide="trash-2" style="width:14px;height:14px;color:#DC2626;stroke-width:2"></i>
               </div>
             </div>`;
 
@@ -319,21 +320,21 @@
 
               <!-- Header -->
               <div style="display:flex;flex-direction:row;align-items:center;
-                          padding:6px 6px 6px 4px;border-bottom:1px solid #27272A">
+                          padding:6px 6px 6px 4px;border-bottom:1px solid #E4E4E7;background:#FAFAFA">
                 <div style="padding:8px">
-                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#FAFAFA;stroke-width:2.5"></i>
+                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#09090B;stroke-width:2.5"></i>
                 </div>
-                <span style="flex:1;font-size:18px;font-weight:700;color:#FAFAFA;
+                <span style="flex:1;font-size:18px;font-weight:700;color:#09090B;
                              white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bathroom Remodel</span>
                 <div style="display:flex;flex-direction:row;align-items:center">
                   <div style="padding:8px;border-radius:12px">
-                    <i data-lucide="eye" style="width:22px;height:22px;color:#A1A1AA;stroke-width:2"></i>
+                    <i data-lucide="eye" style="width:22px;height:22px;color:#71717A;stroke-width:2"></i>
                   </div>
                   <div style="padding:8px;border-radius:12px">
-                    <i data-lucide="share" style="width:22px;height:22px;color:#A1A1AA;stroke-width:2"></i>
+                    <i data-lucide="share" style="width:22px;height:22px;color:#71717A;stroke-width:2"></i>
                   </div>
                   <div style="padding:8px;border-radius:12px">
-                    <i data-lucide="trash-2" style="width:22px;height:22px;color:#EF4444;stroke-width:2"></i>
+                    <i data-lucide="trash-2" style="width:22px;height:22px;color:#DC2626;stroke-width:2"></i>
                   </div>
                 </div>
               </div>
@@ -342,30 +343,31 @@
               <div style="flex:1;overflow-y:auto;padding:12px 16px 4px">
 
                 <!-- Original Request (collapsed) -->
-                <div style="background:#18181B;border:1px solid #27272A;border-radius:16px;
+                <div style="background:#FFFFFF;border:1px solid #E4E4E7;border-radius:16px;
                             padding:14px 16px;margin-bottom:14px;
-                            display:flex;flex-direction:row;justify-content:space-between;align-items:center">
+                            display:flex;flex-direction:row;justify-content:space-between;align-items:center;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.05)">
                   <div style="display:flex;flex-direction:row;align-items:center;gap:8px">
-                    <i data-lucide="message-square" style="width:16px;height:16px;color:#A1A1AA;stroke-width:2"></i>
-                    <span style="font-size:14px;font-weight:600;color:#FAFAFA">Original Request</span>
+                    <i data-lucide="message-square" style="width:16px;height:16px;color:#71717A;stroke-width:2"></i>
+                    <span style="font-size:14px;font-weight:600;color:#09090B">Original Request</span>
                   </div>
                   <i data-lucide="chevron-down" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2"></i>
                 </div>
 
                 <!-- Generated Invoice header + chips -->
                 <div style="margin-bottom:14px">
-                  <p style="font-size:16px;font-weight:700;color:#FAFAFA;margin:0 0 10px">Generated Invoice</p>
+                  <p style="font-size:16px;font-weight:700;color:#09090B;margin:0 0 10px">Generated Invoice</p>
                   <div style="display:flex;flex-direction:row;gap:8px">
                     <div style="display:flex;flex-direction:row;align-items:center;gap:5px;
-                                background:#18181B;border:1px solid #27272A;border-radius:20px;padding:5px 11px">
-                      <i data-lucide="dollar-sign" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
-                      <span style="font-size:13px;color:#A1A1AA">USD</span>
+                                background:#FFFFFF;border:1px solid #E4E4E7;border-radius:20px;padding:5px 11px">
+                      <i data-lucide="dollar-sign" style="width:13px;height:13px;color:#71717A;stroke-width:2"></i>
+                      <span style="font-size:13px;color:#71717A">USD</span>
                       <i data-lucide="chevron-down" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
                     </div>
                     <div style="display:flex;flex-direction:row;align-items:center;gap:5px;
-                                background:#18181B;border:1px solid #27272A;border-radius:20px;padding:5px 11px">
-                      <i data-lucide="layout" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
-                      <span style="font-size:13px;color:#A1A1AA">Modern</span>
+                                background:#FFFFFF;border:1px solid #E4E4E7;border-radius:20px;padding:5px 11px">
+                      <i data-lucide="layout" style="width:13px;height:13px;color:#71717A;stroke-width:2"></i>
+                      <span style="font-size:13px;color:#71717A">Modern</span>
                       <i data-lucide="chevron-down" style="width:13px;height:13px;color:#A1A1AA;stroke-width:2"></i>
                     </div>
                   </div>
@@ -379,7 +381,7 @@
 
                 <!-- Add Item -->
                 <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;
-                            gap:8px;border:1.5px dashed rgba(79,70,229,0.45);border-radius:12px;
+                            gap:8px;border:1.5px dashed rgba(79,70,229,0.4);border-radius:12px;
                             padding:12px;margin-bottom:14px">
                   <i data-lucide="plus" style="width:18px;height:18px;color:#4F46E5;stroke-width:2.5"></i>
                   <span style="font-size:14px;font-weight:600;color:#4F46E5">Add Item</span>
@@ -388,7 +390,7 @@
                 <!-- Total card -->
                 <div style="background:#4F46E5;border-radius:16px;padding:14px 18px;
                             display:flex;flex-direction:row;justify-content:space-between;align-items:center;
-                            margin-bottom:12px;box-shadow:0 4px 14px rgba(79,70,229,0.35)">
+                            margin-bottom:12px;box-shadow:0 4px 14px rgba(79,70,229,0.3)">
                   <span style="font-size:16px;font-weight:700;color:#fff">Total</span>
                   <span style="font-size:26px;font-weight:800;color:#fff">$3,650.00</span>
                 </div>
@@ -397,21 +399,22 @@
                 <div style="display:flex;flex-direction:row;align-items:center;
                             justify-content:space-between;padding:6px 4px;margin-bottom:8px">
                   <div style="display:flex;flex-direction:row;align-items:center;gap:8px">
-                    <i data-lucide="credit-card" style="width:18px;height:18px;color:#A1A1AA;stroke-width:2"></i>
-                    <span style="font-size:14px;font-weight:600;color:#FAFAFA">Payment</span>
+                    <i data-lucide="credit-card" style="width:18px;height:18px;color:#71717A;stroke-width:2"></i>
+                    <span style="font-size:14px;font-weight:600;color:#09090B">Payment</span>
                   </div>
                   <span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;
-                               border:1px solid #EF4444;color:#EF4444;background:rgba(239,68,68,0.08)">Unpaid</span>
+                               border:1px solid #DC2626;color:#DC2626;background:rgba(220,38,38,0.06)">Unpaid</span>
                 </div>
 
               </div>
 
               <!-- AI chat bar -->
-              <div class="px-4 pb-4 pt-2 bg-bg border-t border-border">
-                <div style="display:flex;align-items:center;gap:12px;background:#18181B;
-                            border:1px solid rgba(79,70,229,0.4);border-radius:12px;padding:12px 14px">
+              <div style="padding:8px 16px 16px;background:#FAFAFA;border-top:1px solid #E4E4E7">
+                <div style="display:flex;align-items:center;gap:12px;background:#FFFFFF;
+                            border:1px solid rgba(79,70,229,0.35);border-radius:12px;padding:12px 14px;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.05)">
                   <i data-lucide="sparkles" style="width:18px;height:18px;color:#4F46E5;stroke-width:2;flex-shrink:0"></i>
-                  <span style="flex:1;font-size:13px;color:#71717A">Bump all labor by 10%...</span>
+                  <span style="flex:1;font-size:13px;color:#A1A1AA">Bump all labor by 10%...</span>
                   <div style="width:32px;height:32px;background:#4F46E5;border-radius:16px;
                               display:flex;align-items:center;justify-content:center;flex-shrink:0">
                     <i data-lucide="send" style="width:14px;height:14px;color:#fff;stroke-width:2.5"></i>
@@ -441,7 +444,7 @@
             <div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:72px;flex-shrink:0">
               <div style="width:60px;height:78px;border-radius:6px;overflow:hidden;position:relative;
                           background:${t.dark ? '#0d0d0d' : '#fff'};
-                          border:${t.active ? '2px solid '+t.color : '1.5px solid #3F3F46'}">
+                          border:${t.active ? '2px solid '+t.color : '1.5px solid #D4D4D8'}">
                 <div style="height:16px;background:${t.color};display:flex;align-items:center;padding:0 4px;gap:2px">
                   <div style="height:2px;width:18px;background:rgba(255,255,255,0.7);border-radius:1px"></div>
                 </div>
@@ -458,7 +461,7 @@
                   </div>
                 </div>
                 ${t.isPremium ? `
-                  <div style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);
+                  <div style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.65);
                                border-radius:3px;padding:1px 3px">
                     <span style="font-size:5px;font-weight:700;color:#FFD700">PRO</span>
                   </div>` : ""}
@@ -469,7 +472,7 @@
                     <i data-lucide="check" style="width:8px;height:8px;color:#fff;stroke-width:3"></i>
                   </div>` : ""}
               </div>
-              <span style="font-size:10px;color:${t.active ? '#818CF8' : '#71717A'};
+              <span style="font-size:10px;color:${t.active ? t.color : '#A1A1AA'};
                            font-weight:${t.active ? 700 : 400};text-align:center">${t.name}</span>
             </div>`;
 
@@ -477,26 +480,27 @@
             <div class="flex flex-col h-full bg-bg">
 
               <!-- Header -->
-              <div style="display:flex;align-items:center;padding:10px 8px 10px 4px;border-bottom:1px solid #27272A">
+              <div style="display:flex;align-items:center;padding:10px 8px 10px 4px;
+                          border-bottom:1px solid #E4E4E7;background:#FAFAFA">
                 <div style="padding:8px">
-                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#FAFAFA;stroke-width:2.5"></i>
+                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#09090B;stroke-width:2.5"></i>
                 </div>
-                <span style="flex:1;font-size:17px;font-weight:700;color:#FAFAFA">Invoice Preview</span>
+                <span style="flex:1;font-size:17px;font-weight:700;color:#09090B">Invoice Preview</span>
                 <div style="display:flex;gap:2px">
                   <div style="padding:8px;border-radius:10px">
-                    <i data-lucide="share" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2"></i>
+                    <i data-lucide="share" style="width:20px;height:20px;color:#71717A;stroke-width:2"></i>
                   </div>
                   <div style="padding:8px;border-radius:10px">
-                    <i data-lucide="download" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2"></i>
+                    <i data-lucide="download" style="width:20px;height:20px;color:#71717A;stroke-width:2"></i>
                   </div>
                 </div>
               </div>
 
               <!-- Invoice paper -->
-              <div style="flex:1;background:#1a1a2e;display:flex;align-items:flex-start;
+              <div style="flex:1;background:#E8EAF0;display:flex;align-items:flex-start;
                           justify-content:center;padding:16px 12px 12px;overflow-y:auto">
                 <div style="background:#fff;width:100%;border-radius:10px;
-                            box-shadow:0 20px 40px rgba(0,0,0,0.5);overflow:hidden;min-height:440px">
+                            box-shadow:0 8px 24px rgba(0,0,0,0.12);overflow:hidden;min-height:440px">
 
                   <div style="padding:20px 20px 16px;background:linear-gradient(135deg,#4F46E5,#3730A3);
                               display:flex;flex-direction:row;justify-content:space-between">
@@ -526,16 +530,11 @@
                   </div>
 
                   <div style="padding:12px 20px 0">
-                    <div style="display:flex;flex-direction:row;padding-bottom:6px;
-                                border-bottom:2px solid #4F46E5">
-                      <span style="flex:1;font-size:8px;font-weight:700;color:#aaa;
-                                   text-transform:uppercase;letter-spacing:0.1em">Description</span>
-                      <span style="width:36px;text-align:right;font-size:8px;font-weight:700;color:#aaa;
-                                   text-transform:uppercase;letter-spacing:0.1em">Qty</span>
-                      <span style="width:48px;text-align:right;font-size:8px;font-weight:700;color:#aaa;
-                                   text-transform:uppercase;letter-spacing:0.1em">Rate</span>
-                      <span style="width:52px;text-align:right;font-size:8px;font-weight:700;color:#aaa;
-                                   text-transform:uppercase;letter-spacing:0.1em">Amt</span>
+                    <div style="display:flex;flex-direction:row;padding-bottom:6px;border-bottom:2px solid #4F46E5">
+                      <span style="flex:1;font-size:8px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.1em">Description</span>
+                      <span style="width:36px;text-align:right;font-size:8px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.1em">Qty</span>
+                      <span style="width:48px;text-align:right;font-size:8px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.1em">Rate</span>
+                      <span style="width:52px;text-align:right;font-size:8px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.1em">Amt</span>
                     </div>
                     ${[
                       {name:"Subway tile 4×12", g:"Materials", qty:"200 sqft", rate:"$4.50",  amt:"$900"},
@@ -563,7 +562,7 @@
               </div>
 
               <!-- Template strip at bottom -->
-              <div style="border-top:1px solid #27272A;background:#09090B">
+              <div style="border-top:1px solid #E4E4E7;background:#FFFFFF">
                 <div style="display:flex;flex-direction:row;gap:10px;padding:10px 14px;overflow-x:auto;scrollbar-width:none">
                   ${templates.map(makeThumb).join("")}
                 </div>
@@ -578,23 +577,20 @@
           const makeThumb = (name, color, active, isPremium) => `
             <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
               <div style="width:100%;border-radius:12px;overflow:hidden;position:relative;
-                          border:${active ? '2px solid '+color : '1.5px solid #3F3F46'};
-                          background:${active ? color+'18' : '#27272A'}">
+                          border:${active ? '2px solid '+color : '1.5px solid #D4D4D8'};
+                          background:${active ? color+'12' : '#F4F4F5'}">
                 <div style="height:52px;padding:6px;display:flex;flex-direction:column;gap:2.5px">
                   <div style="height:7px;background:${color};border-radius:3px;width:55%"></div>
-                  <div style="height:1.5px;background:${active?'rgba(255,255,255,0.3)':'#3a3a3a'};
-                               border-radius:1px;width:80%"></div>
-                  <div style="height:1px;background:${active?'rgba(255,255,255,0.2)':'#333'};
-                               border-radius:1px;width:65%"></div>
-                  <div style="height:1px;background:${active?'rgba(255,255,255,0.2)':'#333'};
-                               border-radius:1px;width:75%"></div>
+                  <div style="height:1.5px;background:${active?color+'55':'#D4D4D8'};border-radius:1px;width:80%"></div>
+                  <div style="height:1px;background:${active?color+'33':'#E4E4E7'};border-radius:1px;width:65%"></div>
+                  <div style="height:1px;background:${active?color+'33':'#E4E4E7'};border-radius:1px;width:75%"></div>
                   <div style="margin-top:2px;height:6px;background:${color};border-radius:3px;
                                display:flex;justify-content:flex-end;align-items:center;padding-right:3px">
                     <span style="font-size:3.5px;color:#fff;font-weight:700">$8,250</span>
                   </div>
                 </div>
                 ${isPremium ? `
-                  <div style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.65);
+                  <div style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.5);
                                border-radius:3px;padding:1.5px 4px;display:flex;align-items:center;gap:1px">
                     <span style="font-size:6px;font-weight:700;color:#FFD700">PRO</span>
                   </div>` : ""}
@@ -605,7 +601,7 @@
                     <i data-lucide="check" style="width:9px;height:9px;color:#fff;stroke-width:3"></i>
                   </div>` : ""}
               </div>
-              <span style="font-size:11px;color:${active ? color : '#71717A'};
+              <span style="font-size:11px;color:${active ? color : '#A1A1AA'};
                            font-weight:${active ? 700 : 400};text-align:center">${name}</span>
             </div>`;
 
@@ -616,12 +612,12 @@
 
               <!-- Header (nav) -->
               <div style="display:flex;align-items:center;gap:8px;
-                          padding:10px 16px 10px 4px;border-bottom:1px solid #27272A">
+                          padding:10px 16px 10px 4px;border-bottom:1px solid #E4E4E7;background:#FAFAFA">
                 <div style="padding:8px">
-                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#FAFAFA;stroke-width:2.5"></i>
+                  <i data-lucide="chevron-left" style="width:24px;height:24px;color:#09090B;stroke-width:2.5"></i>
                 </div>
                 <div>
-                  <h1 style="font-size:20px;font-weight:700;color:#FAFAFA;margin:0">Template Settings</h1>
+                  <h1 style="font-size:20px;font-weight:700;color:#09090B;margin:0">Template Settings</h1>
                 </div>
               </div>
 
@@ -630,7 +626,7 @@
 
                 <!-- Invoice Template -->
                 <div>
-                  <p style="font-size:15px;font-weight:600;color:#FAFAFA;margin:0 0 12px">Invoice Template</p>
+                  <p style="font-size:15px;font-weight:600;color:#09090B;margin:0 0 12px">Invoice Template</p>
                   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
                     ${[
                       {name:"Premium", color:"#7C3AED", active:false, isPremium:true},
@@ -648,13 +644,13 @@
 
                 <!-- Theme Color -->
                 <div>
-                  <p style="font-size:15px;font-weight:600;color:#FAFAFA;margin:0 0 4px">Theme Color</p>
-                  <p style="font-size:13px;color:#71717A;margin:0 0 12px">Choose a primary color for your invoice elements.</p>
+                  <p style="font-size:15px;font-weight:600;color:#09090B;margin:0 0 4px">Theme Color</p>
+                  <p style="font-size:13px;color:#A1A1AA;margin:0 0 12px">Choose a primary color for your invoice elements.</p>
                   <div style="display:flex;flex-direction:row;gap:10px;flex-wrap:wrap">
                     ${PRESET_COLORS.map((c, i) => `
                       <div style="width:36px;height:36px;border-radius:18px;background:${c};
                                   display:flex;align-items:center;justify-content:center;
-                                  ${i===0 ? 'box-shadow:0 0 0 3px #09090B,0 0 0 5px '+c : ''}">
+                                  ${i===0 ? 'box-shadow:0 0 0 3px #FAFAFA,0 0 0 5px '+c : ''}">
                         ${i===0 ? `<i data-lucide="check" style="width:16px;height:16px;color:#fff;stroke-width:2.5"></i>` : ""}
                       </div>`).join("")}
                   </div>
@@ -662,23 +658,25 @@
 
                 <!-- Business Details -->
                 <div>
-                  <p style="font-size:15px;font-weight:600;color:#FAFAFA;margin:0 0 12px">Business Details</p>
+                  <p style="font-size:15px;font-weight:600;color:#09090B;margin:0 0 12px">Business Details</p>
                   ${[
                     {icon:"building-2", val:"Ryan's Electric"},
                     {icon:"map-pin",    val:"123 Oak St, Portland OR"},
                     {icon:"phone",      val:"(503) 555-0190"},
                     {icon:"mail",       val:"ryan@ryanselectric.com"},
                   ].map(f => `
-                    <div style="display:flex;align-items:center;gap:12px;background:#18181B;
-                                border:1px solid #27272A;border-radius:12px;padding:11px 14px;margin-bottom:8px">
-                      <i data-lucide="${f.icon}" style="width:20px;height:20px;color:#71717A;stroke-width:2;flex-shrink:0"></i>
-                      <span style="font-size:14px;color:#FAFAFA">${f.val}</span>
+                    <div style="display:flex;align-items:center;gap:12px;background:#FFFFFF;
+                                border:1px solid #E4E4E7;border-radius:12px;padding:11px 14px;margin-bottom:8px;
+                                box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+                      <i data-lucide="${f.icon}" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2;flex-shrink:0"></i>
+                      <span style="font-size:14px;color:#09090B">${f.val}</span>
                     </div>`).join("")}
-                  <div style="display:flex;align-items:center;gap:12px;background:#18181B;
-                              border:1px solid #27272A;border-radius:12px;padding:11px 14px">
-                    <i data-lucide="dollar-sign" style="width:20px;height:20px;color:#71717A;stroke-width:2;flex-shrink:0"></i>
-                    <span style="flex:1;font-size:14px;color:#FAFAFA">USD</span>
-                    <i data-lucide="chevron-right" style="width:16px;height:16px;color:#52525B;stroke-width:2"></i>
+                  <div style="display:flex;align-items:center;gap:12px;background:#FFFFFF;
+                              border:1px solid #E4E4E7;border-radius:12px;padding:11px 14px;
+                              box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+                    <i data-lucide="dollar-sign" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2;flex-shrink:0"></i>
+                    <span style="flex:1;font-size:14px;color:#09090B">USD</span>
+                    <i data-lucide="chevron-right" style="width:16px;height:16px;color:#D4D4D8;stroke-width:2"></i>
                   </div>
                 </div>
 
@@ -693,12 +691,135 @@
             </div>`;
         },
 
+        // ── 6. PROFILE ──────────────────────────────────────────────────────────
+        profile: () => {
+          renderTabBar("profile");
+          return `
+            <div class="flex flex-col h-full bg-bg">
+
+              <!-- Header -->
+              <div style="padding:20px 24px 16px">
+                <h1 style="font-size:32px;font-weight:700;color:#09090B;letter-spacing:-0.5px;margin:0">Profile</h1>
+              </div>
+
+              <!-- Profile section -->
+              <div style="display:flex;flex-direction:column;align-items:center;
+                          padding:24px 24px 28px;border-bottom:1px solid #E4E4E7;margin:0 24px">
+
+                <!-- Avatar -->
+                <div style="position:relative;width:112px;height:112px;margin-bottom:16px">
+                  <div style="width:112px;height:112px;border-radius:56px;border:1.5px solid rgba(79,70,229,0.25);
+                              display:flex;align-items:center;justify-content:center">
+                    <div style="width:104px;height:104px;border-radius:52px;border:2px solid #4F46E5;
+                                display:flex;align-items:center;justify-content:center">
+                      <div style="width:96px;height:96px;border-radius:48px;background:rgba(79,70,229,0.10);
+                                  display:flex;align-items:center;justify-content:center;overflow:hidden">
+                        <span style="color:#6366F1;font-size:32px;font-weight:700;letter-spacing:1px">RJ</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="position:absolute;bottom:1px;right:1px;width:30px;height:30px;border-radius:15px;
+                              background:#4F46E5;border:2px solid #FAFAFA;
+                              display:flex;align-items:center;justify-content:center">
+                    <i data-lucide="camera" style="width:14px;height:14px;color:#fff;stroke-width:2"></i>
+                  </div>
+                </div>
+
+                <p style="font-size:22px;font-weight:700;color:#09090B;margin:0 0 4px">Ryan Johnson</p>
+                <p style="font-size:15px;font-weight:500;color:#A1A1AA;margin:0 0 12px">ryan@ryanselectric.com</p>
+
+                <!-- Free badge -->
+                <div style="background:rgba(79,70,229,0.10);border:1px solid rgba(79,70,229,0.25);
+                            padding:5px 14px;border-radius:14px">
+                  <span style="color:#6366F1;font-size:12px;font-weight:600;letter-spacing:0.5px">Free</span>
+                </div>
+              </div>
+
+              <!-- Menu items -->
+              <div style="padding:24px 24px 0">
+
+                <!-- Upgrade to Pro -->
+                <div style="display:flex;flex-direction:row;align-items:center;background:#FFFFFF;
+                            padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid #7C3AED;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(124,58,237,0.10);
+                              display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0">
+                    <i data-lucide="crown" style="width:20px;height:20px;color:#7C3AED;stroke-width:2"></i>
+                  </div>
+                  <span style="flex:1;font-size:16px;color:#09090B;font-weight:500">Upgrade to Pro</span>
+                  <i data-lucide="chevron-right" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2;flex-shrink:0"></i>
+                </div>
+
+                <!-- Template Customizations -->
+                <div style="display:flex;flex-direction:row;align-items:center;background:#FFFFFF;
+                            padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid #E4E4E7;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(79,70,229,0.10);
+                              display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0">
+                    <i data-lucide="palette" style="width:20px;height:20px;color:#6366F1;stroke-width:2"></i>
+                  </div>
+                  <span style="flex:1;font-size:16px;color:#09090B;font-weight:500">Template Customizations</span>
+                  <i data-lucide="chevron-right" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2;flex-shrink:0"></i>
+                </div>
+
+                <!-- Privacy & Security -->
+                <div style="display:flex;flex-direction:row;align-items:center;background:#FFFFFF;
+                            padding:16px;border-radius:16px;margin-bottom:0;border:1px solid #E4E4E7;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(5,150,105,0.08);
+                              display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0">
+                    <i data-lucide="shield" style="width:20px;height:20px;color:#059669;stroke-width:2"></i>
+                  </div>
+                  <span style="flex:1;font-size:16px;color:#09090B;font-weight:500">Privacy &amp; Security</span>
+                  <i data-lucide="chevron-right" style="width:20px;height:20px;color:#A1A1AA;stroke-width:2;flex-shrink:0"></i>
+                </div>
+              </div>
+
+              <!-- Appearance -->
+              <div style="padding:8px 24px 20px">
+                <p style="font-size:13px;font-weight:600;color:#71717A;letter-spacing:0.5px;
+                           text-transform:uppercase;margin:0 0 10px">Appearance</p>
+                <div style="display:flex;flex-direction:row;background:#F4F4F5;border-radius:16px;
+                            border:1px solid #E4E4E7;padding:4px;gap:4px">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;
+                              justify-content:center;padding:10px 0;border-radius:12px;gap:4px">
+                    <i data-lucide="smartphone" style="width:18px;height:18px;color:#71717A;stroke-width:2"></i>
+                    <span style="font-size:12px;font-weight:600;color:#71717A">System</span>
+                  </div>
+                  <!-- Light (active) -->
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;
+                              justify-content:center;padding:10px 0;border-radius:12px;
+                              background:#4F46E5;gap:4px">
+                    <i data-lucide="sun" style="width:18px;height:18px;color:#fff;stroke-width:2"></i>
+                    <span style="font-size:12px;font-weight:600;color:#fff">Light</span>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;
+                              justify-content:center;padding:10px 0;border-radius:12px;gap:4px">
+                    <i data-lucide="moon" style="width:18px;height:18px;color:#71717A;stroke-width:2"></i>
+                    <span style="font-size:12px;font-weight:600;color:#71717A">Dark</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Logout -->
+              <div style="padding:0 24px 16px">
+                <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;
+                            background:rgba(220,38,38,0.06);padding:16px;border-radius:16px;
+                            border:1px solid #DC2626;gap:8px">
+                  <i data-lucide="log-out" style="width:20px;height:20px;color:#DC2626;stroke-width:2"></i>
+                  <span style="color:#DC2626;font-size:16px;font-weight:600">Log Out</span>
+                </div>
+              </div>
+
+            </div>`;
+        },
+
       }; // end screens
 
       if (screens[screen]) {
         content.innerHTML = screens[screen]();
       } else {
-        content.innerHTML = '<div class="flex items-center justify-center h-full" style="color:#EF4444">Screen not found</div>';
+        content.innerHTML = '<div class="flex items-center justify-center h-full" style="color:#DC2626">Screen not found</div>';
       }
 
       if (window.lucide) {
