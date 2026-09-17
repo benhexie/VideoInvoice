@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { Platform, Alert } from "react-native";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Platform, Alert, AppState } from "react-native";
 import Purchases, {
   LOG_LEVEL,
   PurchasesOffering,
@@ -7,6 +7,7 @@ import Purchases, {
   CustomerInfo,
   PURCHASES_ERROR_CODE,
 } from "react-native-purchases";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { useAuth } from "./AuthContext";
 
 // TODO: Replace with your RevenueCat API keys from the RC dashboard
@@ -15,6 +16,15 @@ const IOS_RC_KEY = "test_LTOYNCPEXuzeOlytVgaDOhuSjXG";
 const ANDROID_RC_KEY = "test_LTOYNCPEXuzeOlytVgaDOhuSjXG";
 
 const ENTITLEMENT_ID = "VideoInvoice Pro";
+
+// Set via the Firebase Auth custom claim `proOverride` (see
+// api/node_server/grant-pro.js). Only the Admin SDK can set custom claims, so
+// this can never be granted by the client itself — it fully bypasses RevenueCat
+// for comped/reviewer/promo accounts.
+type ProOverride = {
+  active: boolean;
+  expiresAt: number | null; // ms epoch; null = unlimited
+};
 
 type SubscriptionContextType = {
   isPro: boolean;
@@ -32,14 +42,43 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
   restorePurchases: async () => {},
 });
 
+const readProOverride = (
+  claims: Record<string, unknown> | undefined,
+): ProOverride | null => {
+  const claim = claims?.proOverride as
+    | { active?: boolean; expiresAt?: number | null }
+    | undefined;
+  if (!claim?.active) return null;
+  return { active: true, expiresAt: claim.expiresAt ?? null };
+};
+
+const isOverrideActive = (override: ProOverride | null): boolean => {
+  if (!override?.active) return false;
+  return override.expiresAt === null || override.expiresAt > Date.now();
+};
+
 export const SubscriptionProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
-  const [isPro, setIsPro] = useState(false);
+  const [isProFromRC, setIsProFromRC] = useState(false);
+  const [proOverride, setProOverride] = useState<ProOverride | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
 
   const updateFromCustomerInfo = (info: CustomerInfo) => {
-    setIsPro(typeof info.entitlements.active[ENTITLEMENT_ID] !== "undefined");
+    setIsProFromRC(typeof info.entitlements.active[ENTITLEMENT_ID] !== "undefined");
+  };
+
+  const refreshProOverride = async (usr: FirebaseAuthTypes.User | null, forceRefresh = false) => {
+    if (!usr) {
+      setProOverride(null);
+      return;
+    }
+    try {
+      const tokenResult = await usr.getIdTokenResult(forceRefresh);
+      setProOverride(readProOverride(tokenResult.claims));
+    } catch (e) {
+      console.error("Error refreshing pro override claim:", e);
+    }
   };
 
   // Configure RC once on mount
@@ -67,7 +106,8 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     init();
   }, []);
 
-  // Tie RC identity to Firebase UID
+  // Tie RC identity to Firebase UID, and pick up any admin-granted pro override
+  // (force-refresh the ID token so a freshly granted claim is seen immediately).
   useEffect(() => {
     const syncIdentity = async () => {
       try {
@@ -77,15 +117,46 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         } else {
           const isAnon = await Purchases.isAnonymous();
           if (!isAnon) await Purchases.logOut();
-          setIsPro(false);
+          setIsProFromRC(false);
         }
       } catch (e) {
         console.error("RC identity sync error:", e);
       }
+      await refreshProOverride(user, true);
     };
 
     syncIdentity();
   }, [user?.uid]);
+
+  // Custom claims only land in the ID token after it refreshes, which can take
+  // up to an hour on its own — force a refresh whenever the app returns to the
+  // foreground so a grant/revoke made while the app was open/backgrounded
+  // takes effect promptly.
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") refreshProOverride(user, true);
+    });
+    return () => subscription.remove();
+  }, [user?.uid]);
+
+  // A time-limited override needs a re-render right at expiry, even if
+  // nothing else changes in the meantime, so `isPro` flips off on schedule.
+  const [, forceTick] = useState(0);
+  const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (expiryTimer.current) clearTimeout(expiryTimer.current);
+    if (proOverride?.active && proOverride.expiresAt !== null) {
+      const delay = proOverride.expiresAt - Date.now();
+      if (delay > 0) {
+        expiryTimer.current = setTimeout(() => forceTick((t) => t + 1), delay);
+      }
+    }
+    return () => {
+      if (expiryTimer.current) clearTimeout(expiryTimer.current);
+    };
+  }, [proOverride]);
+
+  const isPro = isProFromRC || isOverrideActive(proOverride);
 
   const purchasePro = async (pkg: PurchasesPackage): Promise<boolean> => {
     try {

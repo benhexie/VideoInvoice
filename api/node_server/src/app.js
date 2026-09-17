@@ -19,6 +19,7 @@ if (!admin.apps.length) {
         // Replace escaped newlines with actual newlines to support .env single-line strings
         privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       }),
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.firebasestorage.app`,
     });
     console.log("Firebase Admin initialized via environment variables.");
   } else {
@@ -39,6 +40,9 @@ app.use(express.json());
 
 const quotesRouter = require("./routes/quotes");
 app.use("/api/quotes", quotesRouter);
+
+const accountRouter = require("./routes/account");
+app.use("/api/account", accountRouter);
 
 app.get("/health", (req, res) => {
   res.json({ status: "healthy", service: "node_server" });
