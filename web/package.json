@@ -7,6 +7,8 @@
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start",
+    "build:cpanel": "npm run build",
+    "postbuild:cpanel": "cd out && zip -rq ../cpanel-upload.zip .",
     "lint": "eslint",
     "generate-og": "node scripts/generate-og.js"
   },
