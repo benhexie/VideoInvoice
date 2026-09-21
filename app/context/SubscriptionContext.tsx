@@ -13,7 +13,7 @@ import { useAuth } from "./AuthContext";
 // TODO: Replace with your RevenueCat API keys from the RC dashboard
 // Dashboard → Project Settings → API Keys
 const IOS_RC_KEY = "test_LTOYNCPEXuzeOlytVgaDOhuSjXG";
-const ANDROID_RC_KEY = "test_LTOYNCPEXuzeOlytVgaDOhuSjXG";
+const ANDROID_RC_KEY = "goog_CRRaRkmVfVGKwBYxcpNzOCZBMPO";
 
 const ENTITLEMENT_ID = "VideoInvoice Pro";
 

@@ -29,7 +29,8 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "googleServicesFile": "./google-services.json",
-      "package": "com.videoinvoice.app"
+      "package": "com.videoinvoice.app",
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",
