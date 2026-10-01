@@ -4,7 +4,7 @@ export const siteConfig = {
   description:
     "AI-powered invoicing for field contractors. Record a job site video and get a professional itemized invoice in seconds.",
   appStoreUrl: "#download",
-  playStoreUrl: "#download",
+  playStoreUrl: "https://play.google.com/store/apps/details?id=com.videoinvoice.app",
 };
 
 export const templates = [
