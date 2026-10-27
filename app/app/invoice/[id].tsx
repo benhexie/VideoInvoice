@@ -434,11 +434,11 @@ export default function InvoiceReviewScreen() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ invoice_id: id, prompt: chatInput }),
       });
-      if (!res.ok) { const errorData = await res.json(); throw new Error(errorData.error || "Failed to edit quote"); }
+      if (!res.ok) { const errorData = await res.json().catch(() => ({})); throw new Error(errorData.error || "Failed to send edit prompt."); }
       setChatInput("");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to send edit prompt.");
+      alert(e?.message || "Failed to send edit prompt.");
     } finally { setIsProcessingEdit(false); }
   };
 

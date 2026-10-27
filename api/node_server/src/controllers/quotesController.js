@@ -88,6 +88,8 @@ const generateQuote = async (req, res) => {
     return res.status(200).json(response.data);
   } catch (error) {
     console.error("Error calling Rust AI microservice:", error.message);
+    // The engine never started the job, so don't charge it against the quota.
+    if (req.refundGeneration) await req.refundGeneration();
     const statusCode = error.response ? error.response.status : 500;
     const data = error.response
       ? error.response.data

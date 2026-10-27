@@ -234,6 +234,22 @@ export default function CameraCaptureScreen() {
     }
   };
 
+  // The server enforces quotas and rate limits; surface its reason to the user.
+  // (It also marks the invoice stub as an error, so the Invoices tab won't spin.)
+  const handleGenerateResponse = async (res: Response) => {
+    if (res.ok) return;
+    const body = await res.json().catch(() => ({}));
+    const message = body.error || "Something went wrong generating your invoice. Please try again.";
+    if (body.code === "free_limit_reached") {
+      Alert.alert("Invoice Limit Reached", message, [
+        { text: "Not Now", style: "cancel" },
+        { text: "Upgrade", onPress: () => router.push("/paywall") },
+      ]);
+    } else {
+      Alert.alert("Couldn't Generate Invoice", message);
+    }
+  };
+
   const processVideo = async (uri: string) => {
     if (!isPro) {
       const snap = await db().collection("invoices").where("user_id", "==", user?.uid).count().get();
@@ -265,11 +281,12 @@ export default function CameraCaptureScreen() {
       const downloadURL = await storageRef.getDownloadURL();
       await invoiceDocRef.set({ media_url: downloadURL }, { merge: true });
       const token = await user?.getIdToken();
-      await fetch(CONFIG.api.endpoints.generateQuote, {
+      const res = await fetch(CONFIG.api.endpoints.generateQuote, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ invoice_id: invoiceId, media_urls: [downloadURL], prompt: promptText, currency, ...(priceListUrl && { price_list_url: priceListUrl }) }),
       });
+      await handleGenerateResponse(res);
     } catch (e: any) { alert("Error processing video: " + e.message); }
   };
 
@@ -333,11 +350,12 @@ export default function CameraCaptureScreen() {
       const payload: any = { invoice_id: invoiceId, prompt: currentText || "Analyze the attached document to generate a quote.", currency };
       if (documentURL) { payload.media_urls = [documentURL]; payload.project_name = currentDoc?.name?.split(".")[0] || "New Project"; }
       if (priceListUrl) payload.price_list_url = priceListUrl;
-      await fetch(CONFIG.api.endpoints.generateQuote, {
+      const res = await fetch(CONFIG.api.endpoints.generateQuote, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
+      await handleGenerateResponse(res);
     } catch (e: any) { alert("Error processing text request: " + e.message); }
   };
 

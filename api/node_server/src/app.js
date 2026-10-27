@@ -4,6 +4,7 @@ const cors = require("cors");
 const admin = require("firebase-admin");
 const path = require("path");
 const morgan = require("morgan");
+const { apiLimiter } = require("./middlewares/rateLimits");
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
@@ -30,6 +31,10 @@ if (!admin.apps.length) {
 
 const app = express();
 
+// Railway terminates requests at one proxy hop. Without this, req.ip is the
+// proxy's address and every IP-based rate limit becomes a single global bucket.
+app.set("trust proxy", 1);
+
 // Configure EJS template engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -37,6 +42,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use(morgan("dev"));
 app.use(cors());
 app.use(express.json());
+app.use("/api", apiLimiter);
 
 const quotesRouter = require("./routes/quotes");
 app.use("/api/quotes", quotesRouter);
